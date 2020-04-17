@@ -7,13 +7,21 @@ class osmReader {
     osmReader(String fileName){
         try {
             Scanner scanner = new Scanner(new File(fileName));
-            int counter = 0;
             while (scanner.hasNextLine()) {
                 String data = scanner.nextLine();
-                System.out.println(data);
-                counter++;
+                String words[] = data.split(" ");
+
+                //For .txt example
+                if(words[0].equals("id")) continue;
+                int id = Integer.parseInt(words[0]);
+                String name = words[1];
+                double x = Double.parseDouble(words[2]);
+                double y = Double.parseDouble(words[3]);
+                Point point = new Point(x, y);
+                Rectangle rectangle = new Rectangle(point, id, name);
+                Rstar.AddRectangle(rectangle);
             }
-            System.out.println(counter);
+
             scanner.close();
         } catch (FileNotFoundException e) {
             System.out.println(fileName + " was not found...");
