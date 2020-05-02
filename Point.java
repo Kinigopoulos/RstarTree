@@ -8,17 +8,19 @@ class Point {
     Point(){
         position = new ArrayList<>();
     }
+    long id;
 
     // constructor with an Array List as argument
     Point(ArrayList<Double> position){
         this.position = position;
     }
 
-    Point(double... doubles){
+    Point(long id, double... doubles){
         position = new ArrayList<>();
         for(double d : doubles){
             position.add(d);
         }
+        this.id=id;
     }
     // return the coordinates of the Point
     ArrayList<Double> getPositions(){
@@ -33,11 +35,12 @@ class Point {
         return position.size();
     }
 
-    String print(){
+    String getString(){
         String s = "";
-        for (int i=0 ; i<position.size();i++){
-            s = s + (" "+position.get(i));
+        for (double p : position){
+            s = s + p+" ";
         }
+        s = s +"ID : "+id;
         return s;
     }
 }
