@@ -9,11 +9,10 @@ class Rstar {
 
     }
 
-    static void AddRectangle(Rectangle rectangle){
+    static void addRectangle(Rectangle rectangle){
         int id = rectangle.getId();
         for(Rectangle r : rectangles){
             if(r.getId() == id){
-                r.AddPoint(rectangle.getPoint(0));
                 return;
             }
         }
@@ -22,7 +21,7 @@ class Rstar {
 
     static void print(){
         for(Rectangle rectangle : rectangles)
-        System.out.println(rectangle.getName());
+            System.out.println(rectangle.getName());
     }
 
 }
