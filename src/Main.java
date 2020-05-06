@@ -11,6 +11,11 @@ public class Main {
         for(int i=0;i<4;i++){
             p1.add(points.get(i));
             System.out.println(points.get(i).getString());
+
+
+            //This is a test commit!
+
+
         }
 
         Rectangle r1 = new Rectangle(p1,0,"r1");

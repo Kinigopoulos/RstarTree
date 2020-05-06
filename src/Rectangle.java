@@ -53,8 +53,9 @@ class Rectangle {
     ArrayList<Double> getCoordinates(){
         ArrayList<Double> cords = new ArrayList<>();
         for(Point p : points){
-            cords.add(p.getPosition())
+            //cords.add(p.getPosition());
         }
+        return cords;
     }
 
     ArrayList<Point> getPoints(){
