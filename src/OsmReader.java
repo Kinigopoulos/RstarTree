@@ -32,6 +32,8 @@ class OsmReader {
         }
     }
 
-    public ArrayList<Point> getPoints(){return points;}
+    ArrayList<Point> getPoints(){
+        return points;
+    }
 
 }

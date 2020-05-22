@@ -1,44 +1,37 @@
-import java.util.ArrayList;
-
 class Point {
 
-    // an List of double variables to represent the coordinate of the point in each dimension
-    private ArrayList<Double> position;
+    private double[] positions; //Array of doubles to represent the coordinate of the point in each dimension.
+    private long id; //Id of the point.
+    private String name;
+
+    /**
+     * Maybe we want to add names here. Points will be the actual node itself.
+     * Rectangles will be the area that'll contain all the nodes.
+     */
 
     Point(){
-        position = new ArrayList<>();
-    }
-    long id;
-
-    // constructor with an Array List as argument
-    Point(ArrayList<Double> position){
-        this.position = position;
+        positions = new double[RStar.DIMENSIONS];
     }
 
-    Point(long id, double... doubles){
-        position = new ArrayList<>();
-        for(double d : doubles){
-            position.add(d);
-        }
+    Point(long id, double[] positions){
+        this.positions = positions;
         this.id=id;
     }
+
     // return the coordinates of the Point
-    ArrayList<Double> getPositions(){
-        return position;
-    }
-    double getPosition(int n){
-        return position.get(n);
+    double[] getPositions(){
+        return positions;
     }
 
-    // return the number of dimensions the Point has
-    int getDimension(){
-        return position.size();
+    // return position of Nth dimension.
+    double getPosition(int n){
+        return positions[n];
     }
 
     String getString(){
         String s = "";
-        for (double p : position){
-            s = s + p+" ";
+        for (double p : positions){
+            s = s + p + " ";
         }
         s = s +"ID : "+id;
         return s;
