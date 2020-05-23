@@ -8,6 +8,7 @@ class Rectangle<T> {
 
     private double[] maxValues = new double[RStar.DIMENSIONS];
     private double[] minValues = new double[RStar.DIMENSIONS];
+    private double area;
 
     @SuppressWarnings("unchecked")
     private Rectangle(T[] t, int id, boolean isLeafContainer) {
@@ -44,6 +45,7 @@ class Rectangle<T> {
 
     //Help Function, Prints minValues and maxValues.
     void printData() {
+        System.out.println("--- ID: " + id + " ---");
         for (double d : minValues) {
             System.out.print(d + " ");
         }
@@ -52,6 +54,7 @@ class Rectangle<T> {
             System.out.print(d + " ");
         }
         System.out.println();
+        System.out.println("Area: " + area);
     }
 
     //Finds lowest (and highest) values in each dimension.
@@ -83,6 +86,7 @@ class Rectangle<T> {
                 }
             }
         }
+        area = getArea(minValues, maxValues);
     }
 
     //This methods adds a point to this object. If there is no space left returns false.
@@ -107,6 +111,10 @@ class Rectangle<T> {
         return entries;
     }
 
+    int getEntriesSize(){
+        return entriesSize;
+    }
+
     private double[] getMinValues() {
         return minValues;
     }
@@ -115,13 +123,34 @@ class Rectangle<T> {
         return maxValues;
     }
 
+    double getArea(){
+        return getArea();
+    }
+
+    boolean pointsToLeafs(){
+        return isLeafContainer;
+    }
+
     //Function to calculate the Area of the Rectangle.
-    double getArea() {
+    static double getArea(double[] minValues, double[] maxValues) {
         double result = 1;
         for (int i = 0; i < RStar.DIMENSIONS; i++) {
             result *= maxValues[i] - minValues[i];
         }
         return result;
+    }
+
+    double AreaEnlargement(Point point){
+        double[] newMinValues = minValues.clone();
+        double[] newMaxValues = maxValues.clone();
+        for(int i=0; i<RStar.DIMENSIONS; i++){
+            if(newMinValues[i] > point.getPosition(i)){
+                newMinValues[i] = point.getPosition(i);
+            }else if(newMaxValues[i] < point.getPosition(i)){
+                newMaxValues[i] = point.getPosition(i);
+            }
+        }
+        return getArea(newMinValues, newMaxValues) - area;
     }
 
 

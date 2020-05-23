@@ -34,22 +34,25 @@ public class Main {
          */
 
         //Rectangle with points 0, 1, 2.
-        Rectangle<Point> A = new Rectangle<>(new Point[]{points.get(0), points.get(1), points.get(2)}, 1);
+        Rectangle<Point> A = new Rectangle<>(new Point[]{points.get(0), points.get(6)}, 1);
         //Rectangle with points 3, 4, 5.
-        Rectangle<Point> B = new Rectangle<>(new Point[]{points.get(3), points.get(4), points.get(5)}, 2);
+        Rectangle<Point> B = new Rectangle<>(new Point[]{points.get(2), points.get(5)}, 2);
 
         Rectangle<Rectangle> C = new Rectangle<>(new Rectangle[]{A, B}, 3);
 
-        Rectangle<Point> D = new Rectangle<>(new Point[]{points.get(6)}, 12);
-        D.AddPoint(points.get(7));
-
-        System.out.println(A.getArea());
         A.printData();
-        System.out.println(B.getArea());
         B.printData();
-        System.out.println(C.getArea());
         C.printData();
-        System.out.println(D.getArea());
-        D.printData();
+
+        RStar rStar = new RStar();
+        rStar.addRectangle(C);
+        rStar.addRectangle(B);
+        rStar.addRectangle(A);
+
+        rStar.ChooseSubtree(points.get(3)).printData();
+
+        //A.printData();
+        //B.printData();
+        //C.printData();
     }
 }
