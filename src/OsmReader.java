@@ -21,7 +21,7 @@ class OsmReader {
                 double x = Double.parseDouble(words[0]);
                 double y = Double.parseDouble(words[1]);
                 long id = Long.parseLong(words[2]);
-                Point point = new Point(id,x,y);
+                Point point = new Point(id, new double[]{x,y});
 
                 points.add(point);
             }

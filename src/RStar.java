@@ -98,25 +98,43 @@ import java.util.ArrayList;
 class RStar {
 
     //STATIC VARIABLES
-    static final int MAX_ENTRIES = 3; //Defines that no more than 3 rectangles or points can be contained in each node.
+    static final int MAX_ENTRIES = 3; //Defines that no more than the given number of rectangles or points can be contained in each node.
     static final int DIMENSIONS = 2; //Dimensions of RStar Tree.
 
-    private ArrayList<Rectangle> rectangles = new ArrayList<>();
+    private ArrayList<Rectangle<?>> rectangles;
 
     RStar() {
-
+        rectangles = new ArrayList<>();
     }
 
-    Rectangle ChooseSubtree(Point point) {
-        Rectangle N = rectangles.get(0); //N is equal to the root.
+    RStar(Rectangle<?> root){
+        this();
+        rectangles.add(root);
+    }
+
+
+
+    @SuppressWarnings("unchecked")
+    Rectangle<?> ChooseSubtree(Point point) {
+        Rectangle<?> N = rectangles.get(0); //N is equal to the root.
         while (!N.pointsToLeafs()) {
-            Rectangle children[] = (Rectangle[]) N.getEntries();
+            Rectangle<?>[] children = (Rectangle<?>[]) N.getEntries();
             int bestRectangle = 0; //Starting by assuming that the best rectangle is the first.
             double bestArea = children[0].AreaEnlargement(point);
             if (children[0].pointsToLeafs()) {
-                /**TO-DO: Overlap Function**/
-                for (int i = 1; i < N.getEntriesSize(); i++) {
-                    if (bestArea > children[i].AreaEnlargement(point)) {
+                double overlap = 0;
+                for (int i = 0; i < N.getEntriesSize(); i++) {
+                    Rectangle<Point> copy = new Rectangle<>((Point[]) children[i].getEntries(), 0);
+                    if(!copy.AddPoint(point)){
+                        //This condition adds the point to the copied rectangle
+                        //and checks if it has space for it at the same time!
+                        continue;
+                    }
+
+                    if( /* OVERLAPPING FUNCTION HERE */ false){
+
+                    }
+                    else if (bestArea > children[i].AreaEnlargement(point)) {
                         bestRectangle = i;
                     } else if (bestArea == children[i].AreaEnlargement(point)) {
                         if (children[bestRectangle].getArea() > children[i].getArea()) {
@@ -140,9 +158,9 @@ class RStar {
         return N;
     }
 
-    void addRectangle(Rectangle rectangle) {
+    void addRectangle(Rectangle<?> rectangle) {
         int id = rectangle.getId();
-        for (Rectangle r : rectangles) {
+        for (Rectangle<?> r : rectangles) {
             if (r.getId() == id) {
                 System.out.println("This id already exists. Aborting...");
                 return;

@@ -38,21 +38,27 @@ public class Main {
         //Rectangle with points 3, 4, 5.
         Rectangle<Point> B = new Rectangle<>(new Point[]{points.get(2), points.get(5)}, 2);
 
-        Rectangle<Rectangle> C = new Rectangle<>(new Rectangle[]{A, B}, 3);
+        Rectangle<Rectangle<Object>> C = new Rectangle<>(new Rectangle[]{A, B}, 3);
 
         A.printData();
         B.printData();
         C.printData();
 
-        RStar rStar = new RStar();
-        rStar.addRectangle(C);
+        RStar rStar = new RStar(C);
         rStar.addRectangle(B);
         rStar.addRectangle(A);
 
         rStar.ChooseSubtree(points.get(3)).printData();
 
-        //A.printData();
-        //B.printData();
-        //C.printData();
+        Point P1 = new Point(1, new double[]{1, 1});
+        Point P2 = new Point(2, new double[]{8, 13});
+        Point P3 = new Point(3, new double[]{2, 14});
+        Point P4 = new Point(4, new double[]{7, 13});
+
+        Rectangle<Point> T1 = new Rectangle<>(new Point[]{P1, P2}, 20);
+        Rectangle<Point> T2 = new Rectangle<>(new Point[]{P3, P4}, 21);
+        System.out.println(T1.OverlapCost(T2));
+
+
     }
 }

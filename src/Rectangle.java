@@ -1,9 +1,12 @@
+import java.util.Arrays;
+import java.util.Objects;
+
 class Rectangle<T> {
 
     private int id; //Id of the Rectangle.
     private T[] entries; //Points/Rectangles in space.
     private int entriesSize;
-    private Rectangle parent; //Reference to its parent. If it is null then it's the root.
+    private Rectangle<?> parent; //Reference to its parent. If it is null then it's the root.
     private boolean isLeafContainer; //It's true when this object contains entries and not rectangles.
 
     private double[] maxValues = new double[RStar.DIMENSIONS];
@@ -36,8 +39,11 @@ class Rectangle<T> {
     }
 
     @SuppressWarnings("unchecked")
-    Rectangle(Rectangle[] rectangles, int id) {
+    Rectangle(Rectangle<?>[] rectangles, int id) {
         this((T[]) rectangles, id, false);
+        for (Rectangle<?> rectangle : rectangles) {
+            rectangle.parent = this;
+        }
         minValues = rectangles[0].getMinValues().clone();
         maxValues = rectangles[0].getMaxValues().clone();
         ResizeBoundingBox();
@@ -61,7 +67,7 @@ class Rectangle<T> {
     private void ResizeBoundingBox() {
         if (isLeafContainer) {
             Point[] entries = (Point[]) this.entries;
-            for (int i=0; i<entriesSize; i++) {
+            for (int i = 0; i < entriesSize; i++) {
                 for (int j = 0; j < RStar.DIMENSIONS; j++) {
                     if (minValues[j] > entries[i].getPosition(j)) {
                         minValues[j] = entries[i].getPosition(j);
@@ -72,8 +78,8 @@ class Rectangle<T> {
                 }
             }
         } else {
-            Rectangle[] entries = (Rectangle[]) this.entries;
-            for (int i=0; i<entriesSize; i++) {
+            Rectangle<?>[] entries = (Rectangle<?>[]) this.entries;
+            for (int i = 0; i < entriesSize; i++) {
                 double[] rectangleMinValues = entries[i].getMinValues();
                 double[] rectangleMaxValues = entries[i].getMaxValues();
                 for (int j = 0; j < RStar.DIMENSIONS; j++) {
@@ -95,7 +101,7 @@ class Rectangle<T> {
             System.out.println("Cannot add more entries. Aborting...");
             return false;
         }
-        entries[entriesSize] = entry;
+        entries[entriesSize] = (T)entry;
         entriesSize++;
         ResizeBoundingBox();
         return true;
@@ -108,10 +114,10 @@ class Rectangle<T> {
 
     //Returns the entries.
     T[] getEntries() {
-        return entries;
+        return Arrays.copyOfRange(entries, 0, entriesSize);
     }
 
-    int getEntriesSize(){
+    int getEntriesSize() {
         return entriesSize;
     }
 
@@ -123,11 +129,11 @@ class Rectangle<T> {
         return maxValues;
     }
 
-    double getArea(){
-        return getArea();
+    double getArea() {
+        return area;
     }
 
-    boolean pointsToLeafs(){
+    boolean pointsToLeafs() {
         return isLeafContainer;
     }
 
@@ -140,17 +146,38 @@ class Rectangle<T> {
         return result;
     }
 
-    double AreaEnlargement(Point point){
+    double AreaEnlargement(Point point) {
         double[] newMinValues = minValues.clone();
         double[] newMaxValues = maxValues.clone();
-        for(int i=0; i<RStar.DIMENSIONS; i++){
-            if(newMinValues[i] > point.getPosition(i)){
+        for (int i = 0; i < RStar.DIMENSIONS; i++) {
+            if (newMinValues[i] > point.getPosition(i)) {
                 newMinValues[i] = point.getPosition(i);
-            }else if(newMaxValues[i] < point.getPosition(i)){
+            } else if (newMaxValues[i] < point.getPosition(i)) {
                 newMaxValues[i] = point.getPosition(i);
             }
         }
         return getArea(newMinValues, newMaxValues) - area;
+    }
+
+    double OverlapCost(Rectangle<?> rectangle) {
+        double[] otherMinValues = rectangle.getMinValues();
+        double[] otherMaxValues = rectangle.getMaxValues();
+        double overlap = 1;
+        for (int i = 0; i < RStar.DIMENSIONS; i++) {
+            if(this.maxValues[i] > otherMinValues[i] && this.maxValues[i] < otherMaxValues[i]){
+                overlap *= this.maxValues[i] - Math.max(otherMinValues[i], this.minValues[i]);
+            }else if(this.minValues[i] < otherMaxValues[i] && this.minValues[i] > otherMinValues[i]){
+                overlap *= Math.min(otherMaxValues[i], this.maxValues[i]) - this.minValues[i];
+            }else if(this.maxValues[i] > otherMaxValues[i] && this.minValues[i] < otherMinValues[i]){
+                overlap *= otherMaxValues[i] - otherMinValues[i];
+            }else if(this.maxValues[i] < otherMaxValues[i] && this.minValues[i] > otherMinValues[i]){
+                overlap *= this.maxValues[i] - this.minValues[i];
+            }else{
+                overlap = 0;
+                break;
+            }
+        }
+        return overlap;
     }
 
 
