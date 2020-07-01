@@ -1,5 +1,4 @@
 import java.util.Arrays;
-import java.util.Objects;
 
 class Rectangle<T> {
 
@@ -9,18 +8,18 @@ class Rectangle<T> {
     private Rectangle<?> parent; //Reference to its parent. If it is null then it's the root.
     private boolean isLeafContainer; //It's true when this object contains entries and not rectangles.
 
-    private double[] maxValues = new double[RStar.DIMENSIONS];
-    private double[] minValues = new double[RStar.DIMENSIONS];
+    private double[] maxValues = new double[Main.DIMENSIONS];
+    private double[] minValues = new double[Main.DIMENSIONS];
     private double area;
 
     @SuppressWarnings("unchecked")
     private Rectangle(T[] t, int id, boolean isLeafContainer) {
         if (isLeafContainer) {
-            entries = (T[]) new Point[RStar.MAX_ENTRIES];
+            entries = (T[]) new Point[Main.MAX_ENTRIES];
         } else {
-            entries = (T[]) new Rectangle[RStar.MAX_ENTRIES];
+            entries = (T[]) new Rectangle[Main.MAX_ENTRIES];
         }
-        if (t.length > RStar.MAX_ENTRIES) {
+        if (t.length > Main.MAX_ENTRIES) {
             System.out.println("Trying to allocate more entries than allowed. Aborting...");
             return;
         }
@@ -68,7 +67,7 @@ class Rectangle<T> {
         if (isLeafContainer) {
             Point[] entries = (Point[]) this.entries;
             for (int i = 0; i < entriesSize; i++) {
-                for (int j = 0; j < RStar.DIMENSIONS; j++) {
+                for (int j = 0; j < Main.DIMENSIONS; j++) {
                     if (minValues[j] > entries[i].getPosition(j)) {
                         minValues[j] = entries[i].getPosition(j);
                     }
@@ -82,7 +81,7 @@ class Rectangle<T> {
             for (int i = 0; i < entriesSize; i++) {
                 double[] rectangleMinValues = entries[i].getMinValues();
                 double[] rectangleMaxValues = entries[i].getMaxValues();
-                for (int j = 0; j < RStar.DIMENSIONS; j++) {
+                for (int j = 0; j < Main.DIMENSIONS; j++) {
                     if (minValues[j] > rectangleMinValues[j]) {
                         minValues[j] = rectangleMinValues[j];
                     }
@@ -97,7 +96,7 @@ class Rectangle<T> {
 
     //This methods adds a point to this object. If there is no space left returns false.
     boolean AddPoint(T entry) {
-        if (entriesSize == RStar.MAX_ENTRIES) {
+        if (entriesSize == Main.MAX_ENTRIES) {
             System.out.println("Cannot add more entries. Aborting...");
             return false;
         }
@@ -140,7 +139,7 @@ class Rectangle<T> {
     //Function to calculate the Area of the Rectangle.
     static double getArea(double[] minValues, double[] maxValues) {
         double result = 1;
-        for (int i = 0; i < RStar.DIMENSIONS; i++) {
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
             result *= maxValues[i] - minValues[i];
         }
         return result;
@@ -149,7 +148,7 @@ class Rectangle<T> {
     double AreaEnlargement(Point point) {
         double[] newMinValues = minValues.clone();
         double[] newMaxValues = maxValues.clone();
-        for (int i = 0; i < RStar.DIMENSIONS; i++) {
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
             if (newMinValues[i] > point.getPosition(i)) {
                 newMinValues[i] = point.getPosition(i);
             } else if (newMaxValues[i] < point.getPosition(i)) {
@@ -163,7 +162,7 @@ class Rectangle<T> {
         double[] otherMinValues = rectangle.getMinValues();
         double[] otherMaxValues = rectangle.getMaxValues();
         double overlap = 1;
-        for (int i = 0; i < RStar.DIMENSIONS; i++) {
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
             if(this.maxValues[i] > otherMinValues[i] && this.maxValues[i] < otherMaxValues[i]){
                 overlap *= this.maxValues[i] - Math.max(otherMinValues[i], this.minValues[i]);
             }else if(this.minValues[i] < otherMaxValues[i] && this.minValues[i] > otherMinValues[i]){

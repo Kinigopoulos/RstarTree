@@ -37,13 +37,13 @@ import java.util.ArrayList;
  * s3     Distribute the entries into two groups.
  * <p>
  * +++Algorithm ChooseSplitAxis+++
- * CSA1   For each axis
- * Sort the entries by the lower then by the upper
- * value of their rectangles and determine all
- * distributions as described above Compute S. the
- * sum of all margin-values of the different
- * distributions.
- * end
+ * CSA1 For each axis
+ *          Sort the entries by the lower then by the upper
+ *          value of their rectangles and determine all
+ *          distributions as described above Compute S. the
+ *          sum of all margin-values of the different
+ *          distributions.
+ *      end
  * CSA2   Choose the axis with the minimum S as split axis.
  * <p>
  * +++Algorithm ChooseSplitIndex+++
@@ -97,9 +97,7 @@ import java.util.ArrayList;
 
 class RStar {
 
-    //STATIC VARIABLES
-    static final int MAX_ENTRIES = 3; //Defines that no more than the given number of rectangles or points can be contained in each node.
-    static final int DIMENSIONS = 2; //Dimensions of RStar Tree.
+
 
     private ArrayList<Rectangle<?>> rectangles;
 
@@ -107,14 +105,35 @@ class RStar {
         rectangles = new ArrayList<>();
     }
 
-    RStar(Rectangle<?> root){
+    RStar(Rectangle<?> root) {
         this();
         rectangles.add(root);
     }
 
+    double Overlap(Rectangle<Point> rectangle) {
+        double area = rectangle.getArea();
+        double totalOverlap = 0;
+        ArrayList<Rectangle<?>> rectanglesToLook = new ArrayList<>();
+        rectanglesToLook.add(rectangles.get(0)); //Add the root to begin looking for overlaps
+        while (!rectanglesToLook.isEmpty()) {
+            Rectangle<?>[] currentChildren = (Rectangle<?>[]) rectanglesToLook.get(0).getEntries();
+            for (int i = 0; i < rectanglesToLook.get(0).getEntriesSize(); i++) {
+                double overlap = rectangle.OverlapCost(currentChildren[i]);
+                //If the overlap is the same as the area it means that the rectangle either includes the
+                //rectangle which we calculate the overlap for or they are the same.
+                if (overlap == area) {
+                    if (!currentChildren[i].pointsToLeafs()) {
+                        rectanglesToLook.add(currentChildren[i]);
+                    }
+                } else {
+                    totalOverlap += overlap;
+                }
+            }
+            rectanglesToLook.remove(0);
+        }
+        return totalOverlap;
+    }
 
-
-    @SuppressWarnings("unchecked")
     Rectangle<?> ChooseSubtree(Point point) {
         Rectangle<?> N = rectangles.get(0); //N is equal to the root.
         while (!N.pointsToLeafs()) {
@@ -122,19 +141,21 @@ class RStar {
             int bestRectangle = 0; //Starting by assuming that the best rectangle is the first.
             double bestArea = children[0].AreaEnlargement(point);
             if (children[0].pointsToLeafs()) {
-                double overlap = 0;
+                double minOverlap = Double.MAX_VALUE;
                 for (int i = 0; i < N.getEntriesSize(); i++) {
                     Rectangle<Point> copy = new Rectangle<>((Point[]) children[i].getEntries(), 0);
-                    if(!copy.AddPoint(point)){
+                    if (!copy.AddPoint(point)) {
                         //This condition adds the point to the copied rectangle
                         //and checks if it has space for it at the same time!
                         continue;
                     }
 
-                    if( /* OVERLAPPING FUNCTION HERE */ false){
-
-                    }
-                    else if (bestArea > children[i].AreaEnlargement(point)) {
+                    double copyOverlap = Overlap(copy);
+                    System.out.println("Overlap: " + copyOverlap);
+                    if (copyOverlap < minOverlap) {
+                        bestRectangle = i;
+                        minOverlap = copyOverlap;
+                    } else if (bestArea > children[i].AreaEnlargement(point)) {
                         bestRectangle = i;
                     } else if (bestArea == children[i].AreaEnlargement(point)) {
                         if (children[bestRectangle].getArea() > children[i].getArea()) {
@@ -156,6 +177,14 @@ class RStar {
             N = children[bestRectangle];
         }
         return N;
+    }
+
+    void ChooseSplitAxis(){
+
+        for(int i=0; i<Main.DIMENSIONS; i++){
+            
+        }
+
     }
 
     void addRectangle(Rectangle<?> rectangle) {

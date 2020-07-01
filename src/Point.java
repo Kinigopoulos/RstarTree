@@ -2,7 +2,6 @@ class Point {
 
     private double[] positions; //Array of doubles to represent the coordinate of the point in each dimension.
     private long id; //Id of the point.
-    private String name;
 
     /**
      * Maybe we want to add names here. Points will be the actual node itself.
@@ -10,7 +9,7 @@ class Point {
      */
 
     Point(){
-        positions = new double[RStar.DIMENSIONS];
+        positions = new double[Main.DIMENSIONS];
     }
 
     Point(long id, double[] positions){
@@ -33,7 +32,7 @@ class Point {
         for (double p : positions){
             s = s + p + " ";
         }
-        s = s +"ID : "+id;
+        s = s +"\tID: "+id;
         return s;
     }
 }
