@@ -1,28 +1,39 @@
+import java.io.File;
 import java.util.ArrayList;
 
 public class Main {
 
-    //STATIC VARIABLES
+    /////STATIC VARIABLES\\\\\
+    //R* TREE VARIABLES
     // Defines that no more than the given number of rectangles or points can be contained in each node.
     public static final int MAX_ENTRIES = 3;
     // Dimensions of the database and/or RStar Tree.
     public static final int DIMENSIONS = 2;
 
-    //READING DATAFILE VARIABLES
+    //WRITING DATAFILE VARIABLES
+    // Defines the csv file which will saved in datafiles
+    public static final String FILENAME = "amenity_points.csv";
+    // Defines if the program should ignore the first line because is a header and doesn't contain information.
+    public static final boolean HAS_HEADER = true;
+    // Defines maximum size (in bytes) for each datafile
+    public static final int MAXIMUM_SIZE = 500;
     // Defines the character that splits data into columns
-    public static final String SEPARATOR = "\t";
+    public static final String SEPARATOR = ",";
     // Defines the columns of data that indicate position. Ex.: {0, 1} indicates that x is in 0th column, y is in 1st.
-    public static final int[] COLUMNS_OF_POSITION = {1, 2};
+    public static final int[] COLUMNS_OF_POSITION = {0, 1};
     // Defines the column of data that indicate the id.
-    public static final int COLUMN_OF_ID = 0;
+    public static final int COLUMN_OF_ID = 2;
+    // Defines the column of data that indicate the name.
+    public static final int COLUMN_OF_NAME = 4;
 
     public static void main(String[] args) {
 
         //OsmReader osmReader = new OsmReader("amenity_points.csv");
         //ArrayList<Point> points = osmReader.getEntries();
 
-        //SerialSearch.RANGE_QUERY(new double[]{26.55, 41.00}, new double[]{28.00, 41.5});
-        SerialSearch.K_NN_QUERY(0, new double[]{26.52, 41.5});
+        FileReader.CreateDatafiles();
+        SerialSearch.RANGE_QUERY(new double[]{26.25, 40.00}, new double[]{28.00, 41.5});
+        //SerialSearch.K_NN_QUERY(2, new double[]{26.52, 41.5});
 
         /**
          This is some test points to build R Star.

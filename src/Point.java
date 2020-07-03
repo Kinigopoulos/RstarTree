@@ -2,6 +2,7 @@ class Point {
 
     private double[] positions; //Array of doubles to represent the coordinate of the point in each dimension.
     private long id; //Id of the point.
+    private String name = "";
 
     /**
      * Maybe we want to add names here. Points will be the actual node itself.
@@ -17,6 +18,11 @@ class Point {
         this.id=id;
     }
 
+    Point(long id, double[] positions, String name){
+        this(id, positions);
+        this.name = name;
+    }
+
     // return the coordinates of the Point
     double[] getPositions(){
         return positions;
@@ -30,9 +36,10 @@ class Point {
     String getString(){
         String s = "";
         for (double p : positions){
-            s = s + p + " ";
+            s = s + p + "\t";
         }
-        s = s +"\tID: "+id;
+        s += "ID: "+id;
+        s += "\t" + name;
         return s;
     }
 }

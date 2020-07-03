@@ -145,6 +145,7 @@ class Rectangle<T> {
         return result;
     }
 
+    //Function that returns the area if a given point will be added in the rectangle.
     double AreaEnlargement(Point point) {
         double[] newMinValues = minValues.clone();
         double[] newMaxValues = maxValues.clone();
@@ -158,6 +159,7 @@ class Rectangle<T> {
         return getArea(newMinValues, newMaxValues) - area;
     }
 
+    //Given another rectangle, calculate the overlap value with this one.
     double OverlapCost(Rectangle<?> rectangle) {
         double[] otherMinValues = rectangle.getMinValues();
         double[] otherMaxValues = rectangle.getMaxValues();
