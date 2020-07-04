@@ -15,11 +15,11 @@ class Rectangle<T> {
     @SuppressWarnings("unchecked")
     private Rectangle(T[] t, int id, boolean isLeafContainer) {
         if (isLeafContainer) {
-            entries = (T[]) new Point[Main.MAX_ENTRIES];
+            entries = (T[]) new Point[Main.MAX_ENTRIES + 1];
         } else {
-            entries = (T[]) new Rectangle[Main.MAX_ENTRIES];
+            entries = (T[]) new Rectangle[Main.MAX_ENTRIES + 1];
         }
-        if (t.length > Main.MAX_ENTRIES) {
+        if (t.length > Main.MAX_ENTRIES + 1) {
             System.out.println("Trying to allocate more entries than allowed. Aborting...");
             return;
         }
@@ -95,15 +95,14 @@ class Rectangle<T> {
     }
 
     //This methods adds a point to this object. If there is no space left returns false.
-    boolean AddPoint(T entry) {
-        if (entriesSize == Main.MAX_ENTRIES) {
-            System.out.println("Cannot add more entries. Aborting...");
-            return false;
-        }
-        entries[entriesSize] = (T)entry;
+    void AddPoint(T entry) {
+        entries[entriesSize] = entry;
         entriesSize++;
         ResizeBoundingBox();
-        return true;
+    }
+
+    boolean isFull(){
+        return entriesSize != Main.MAX_ENTRIES + 1;
     }
 
     //Returns the id.
@@ -120,12 +119,24 @@ class Rectangle<T> {
         return entriesSize;
     }
 
-    private double[] getMinValues() {
+    void setEntriesSize(int entriesSize){
+        this.entriesSize = entriesSize;
+    }
+
+    double[] getMinValues() {
         return minValues;
     }
 
-    private double[] getMaxValues() {
+    double[] getMaxValues() {
         return maxValues;
+    }
+
+    double getMinValue(int dimension) {
+        return minValues[dimension];
+    }
+
+    double getMaxValue(int dimension) {
+        return maxValues[dimension];
     }
 
     double getArea() {
@@ -141,6 +152,15 @@ class Rectangle<T> {
         double result = 1;
         for (int i = 0; i < Main.DIMENSIONS; i++) {
             result *= maxValues[i] - minValues[i];
+        }
+        return result;
+    }
+
+    //Function to calculate the margin of the Rectangle (known also as perimeter).
+    static double getMargin(double[] minValues, double[] maxValues) {
+        double result = 0;
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
+            result += maxValues[i] - minValues[i];
         }
         return result;
     }
@@ -165,15 +185,15 @@ class Rectangle<T> {
         double[] otherMaxValues = rectangle.getMaxValues();
         double overlap = 1;
         for (int i = 0; i < Main.DIMENSIONS; i++) {
-            if(this.maxValues[i] > otherMinValues[i] && this.maxValues[i] < otherMaxValues[i]){
+            if (this.maxValues[i] > otherMinValues[i] && this.maxValues[i] < otherMaxValues[i]) {
                 overlap *= this.maxValues[i] - Math.max(otherMinValues[i], this.minValues[i]);
-            }else if(this.minValues[i] < otherMaxValues[i] && this.minValues[i] > otherMinValues[i]){
+            } else if (this.minValues[i] < otherMaxValues[i] && this.minValues[i] > otherMinValues[i]) {
                 overlap *= Math.min(otherMaxValues[i], this.maxValues[i]) - this.minValues[i];
-            }else if(this.maxValues[i] > otherMaxValues[i] && this.minValues[i] < otherMinValues[i]){
+            } else if (this.maxValues[i] > otherMaxValues[i] && this.minValues[i] < otherMinValues[i]) {
                 overlap *= otherMaxValues[i] - otherMinValues[i];
-            }else if(this.maxValues[i] < otherMaxValues[i] && this.minValues[i] > otherMinValues[i]){
+            } else if (this.maxValues[i] < otherMaxValues[i] && this.minValues[i] > otherMinValues[i]) {
                 overlap *= this.maxValues[i] - this.minValues[i];
-            }else{
+            } else {
                 overlap = 0;
                 break;
             }
@@ -181,5 +201,19 @@ class Rectangle<T> {
         return overlap;
     }
 
-
+    public static int Compare(Rectangle<?> a, Rectangle<?> b, int axis) {
+        double difference = a.getMinValue(axis) - b.getMinValue(axis);
+        if (difference < 0) {
+            return -1;
+        } else if (difference > 0) {
+            return 1;
+        }
+        difference = a.getMaxValue(axis) - b.getMaxValue(axis);
+        if (difference < 0) {
+            return -1;
+        } else if (difference > 0) {
+            return 1;
+        }
+        return 0;
+    }
 }

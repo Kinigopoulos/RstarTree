@@ -1,105 +1,11 @@
 import java.util.ArrayList;
-
-/**
- * +++Algorithm ChooseSubtree+++
- * CSl    Set N to be the root
- * CS2    If N is a leaf,
- * return N
- * else
- * If the childPointers in N point to leaves
- * [determine the minimum overlap cost],
- * choose the entry in N whose rectangle needs least
- * overlap enlargement to include the new data
- * rectangle. Resolve ties by choosing the entry
- * whose rectangle needs least area enlargement,
- * then
- * the entry with the rectangle of smallest area
- * If the childPointers in N do not point to leaves
- * [determine the minimum area cost],
- * choose the entry in N whose rectangle needs least
- * area enlargement to include the new data
- * rectangle Resolve ties by choose the entry
- * with the rectangle of smallest area
- * end
- * CS3        Set N to be the childNode pointed to by the
- * childPointer of the chosen entry and repeat from CS2
- * <p>
- * (i) area-value area[bb(first group)] + area[bb(second group)]
- * (ii) margin-value margin[bb(first group)] + margin[bb(second group)]
- * (iii) overlap-value area[bb(first group) \intersection  bb(second group)]
- * Here bb denotes the bounding box of a set of rectangles
- * <p>
- * +++Algorithm Split+++
- * s1     Invoke ChooseSplitAxis to determine the axis,
- * perpendicular to which the split 1s performed.
- * s2     Invoke ChooseSplitAxis to determine the best
- * distribution mto two groups along that axis.
- * s3     Distribute the entries into two groups.
- * <p>
- * +++Algorithm ChooseSplitAxis+++
- * CSA1 For each axis
- *          Sort the entries by the lower then by the upper
- *          value of their rectangles and determine all
- *          distributions as described above Compute S. the
- *          sum of all margin-values of the different
- *          distributions.
- *      end
- * CSA2   Choose the axis with the minimum S as split axis.
- * <p>
- * +++Algorithm ChooseSplitIndex+++
- * CSI1   Along the chosen split axis, choose the
- * distribution with the minimum overlap-value
- * Resolve ties by choosing the distribution with
- * minimum area-value.
- * <p>
- * +++Algorithm InsertData+++
- * ID1    Invoke Insert starting with the leaf level as a
- * parameter, to Insert a new data rectangle.
- * <p>
- * +++Algorithm Insert+++
- * I1     Invoke ChooseSubtree, with the level as a parameter,
- * to find an appropriate node N, in which to place the
- * new entry E
- * I2     If N has less than M entries, accommodate E in N
- * If N has M entries,
- * invoke OverflowTreatment with the level of N
- * as a parameter [for reinsertion or split]
- * I3     If OverflowTreatment was called and a split was performed,
- * propagate OverflowTreatment upwards if necessary
- * If OverflowTreatment caused a split of the root,
- * create a new root
- * I4     Adjust all covering rectangles in the insertion path
- * such that they are minimum bounding boxes
- * enclosing then children rectangles
- * <p>
- * +++Algorithm OverflowTreatment+++
- * OT1    If the level is not the root level and this is the first
- * call of OverflowTreatment in the given level during the
- * Insertion of one data rectangle, then
- * invoke Reinsert
- * else
- * invoke Split
- * end
- * <p>
- * +++Algorithm Reinsert+++
- * RI1    For all M+1 entries of a node N, compute the distance
- * between the centers of their rectangles and the center
- * of the bounding rectangle of N
- * RI2    Sort the entries m decreasing order of their distances
- * computed in RI1
- * RI3    Remove the first p entries from N and adjust the
- * bounding rectangle of N
- * RI4    In the sort, defined in RI2, starting with the maximum
- * distance (= far reinsert) or minimum distance (= close
- * reinsert), invoke Insert to reinsert the entries
- **/
-
+import java.util.Arrays;
+import java.util.Comparator;
 
 class RStar {
 
-
-
     private ArrayList<Rectangle<?>> rectangles;
+    private boolean mustSplit = false;
 
     RStar() {
         rectangles = new ArrayList<>();
@@ -110,7 +16,7 @@ class RStar {
         rectangles.add(root);
     }
 
-    double Overlap(Rectangle<Point> rectangle) {
+    double Overlap(Rectangle<?> rectangle) {
         double area = rectangle.getArea();
         double totalOverlap = 0;
         ArrayList<Rectangle<?>> rectanglesToLook = new ArrayList<>();
@@ -144,22 +50,25 @@ class RStar {
                 double minOverlap = Double.MAX_VALUE;
                 for (int i = 0; i < N.getEntriesSize(); i++) {
                     Rectangle<Point> copy = new Rectangle<>((Point[]) children[i].getEntries(), 0);
-                    if (!copy.AddPoint(point)) {
-                        //This condition adds the point to the copied rectangle
-                        //and checks if it has space for it at the same time!
-                        continue;
-                    }
-
+                    copy.AddPoint(point);
                     double copyOverlap = Overlap(copy);
                     System.out.println("Overlap: " + copyOverlap);
                     if (copyOverlap < minOverlap) {
                         bestRectangle = i;
+                        bestArea = copy.getArea();
                         minOverlap = copyOverlap;
-                    } else if (bestArea > children[i].AreaEnlargement(point)) {
-                        bestRectangle = i;
-                    } else if (bestArea == children[i].AreaEnlargement(point)) {
-                        if (children[bestRectangle].getArea() > children[i].getArea()) {
+                        mustSplit = copy.isFull();
+                    } else if (copyOverlap == minOverlap) {
+                        double area = copy.getArea();
+                        if (bestArea > area) {
                             bestRectangle = i;
+                            bestArea = area;
+                            mustSplit = copy.isFull();
+                        } else if (bestArea == area) {
+                            if (children[bestRectangle].getArea() > children[i].getArea()) {
+                                bestRectangle = i;
+                                mustSplit = copy.isFull();
+                            }
                         }
                     }
                 }
@@ -179,13 +88,102 @@ class RStar {
         return N;
     }
 
-    void ChooseSplitAxis(){
+    private void Split(Rectangle<?> rectangle) {
+        int axis = ChooseSplitAxis(rectangle);
+        int index = ChooseSplitIndex(rectangle, axis);
+        Rectangle<?>[] children = (Rectangle<?>[]) rectangle.getEntries();
+        Rectangle<?> other = new Rectangle(Arrays.copyOfRange(children, index, rectangle.getEntriesSize()), 0);
+        rectangle.setEntriesSize(index - 1);
+    }
 
-        for(int i=0; i<Main.DIMENSIONS; i++){
-            
+    private int ChooseSplitAxis(Rectangle<?> rectangle) {
+        final int M = rectangle.getEntriesSize();
+        final int m = (Main.MINIMUM_ENTRIES_PERCENTAGE * M / 100);
+        final int kMax = M - 2 * m + 1;
+        int kEnd = m + kMax;
+
+        Rectangle<?>[] children = new Rectangle[M];
+        System.arraycopy(rectangle.getEntries(), 0, children, 0, children.length);
+
+        double bestMargin = Double.MAX_VALUE;
+        int bestAxis = 0;
+        for (int axis = 0; axis < Main.DIMENSIONS; axis++) {
+            double totalMargin = 0;
+            for (int sortType = 0; sortType < 2; sortType++) {
+                if (sortType == 0) {
+                    int finalAxis = axis;
+                    Arrays.sort(children, (a, b) -> Rectangle.Compare(a, b, finalAxis));
+                } else {
+                    Rectangle<?>[] reverse = new Rectangle[M];
+                    for (int i = 0; i < M; i++) {
+                        reverse[i] = children[M - i - 1];
+                    }
+                    children = reverse;
+                }
+                for (int k = m + 1; k <= kEnd; k++) {
+                    totalMargin += CalculateMargin(Arrays.copyOfRange(children, 0, k));
+                    totalMargin += CalculateMargin(Arrays.copyOfRange(children, k, children.length));
+                }
+            }
+
+            if (totalMargin < bestMargin) {
+                bestMargin = totalMargin;
+                bestAxis = axis;
+            }
+        }
+        return bestAxis;
+    }
+
+    private double CalculateMargin(Rectangle<?>[] rectangles) {
+        Rectangle<?> temp = new Rectangle<>(rectangles, -1);
+        return Rectangle.getMargin(temp.getMinValues(), temp.getMaxValues());
+    }
+
+    private int ChooseSplitIndex(Rectangle<?> rectangle, int axis) {
+        double minOverlap = Double.MAX_VALUE;
+        double minArea = Double.MAX_VALUE;
+        int bestIndex = 0;
+        final int M = rectangle.getEntriesSize();
+        final int m = Main.MINIMUM_ENTRIES_PERCENTAGE * M / 100;
+        final int kMax = (M - 2 * m + 1);
+        Rectangle<?>[] children = new Rectangle[M];
+        System.arraycopy(rectangle.getEntries(), 0, children, 0, children.length);
+        Arrays.sort(children, (a, b) -> Rectangle.Compare(a, b, axis));
+
+        for (int i = m + 1; i <= m + kMax; i++) {
+            double currentOverlap = 0;
+
+            Rectangle<?> split1 = new Rectangle<>(Arrays.copyOfRange(children, 0, i), -1);
+            Rectangle<?> split2 = new Rectangle<>(Arrays.copyOfRange(children, i + 1, children.length), -1);
+            currentOverlap += Overlap(split1);
+            currentOverlap += Overlap(split2);
+
+            if (currentOverlap < minOverlap) {
+                minOverlap = currentOverlap;
+                minArea = split1.getArea() + split2.getArea();
+                bestIndex = i;
+            } else if (currentOverlap == minOverlap) {
+                double currentArea = split1.getArea() + split2.getArea();
+                if (currentArea < minArea) {
+                    minOverlap = currentOverlap;
+                    minArea = currentArea;
+                    bestIndex = i;
+                }
+            }
         }
 
+        return bestIndex;
     }
+
+    void InsertData(Point point) {
+        Insert(point);
+    }
+
+    private void Insert(Point point) {
+        Rectangle<?> bestRectangle = ChooseSubtree(point);
+
+    }
+
 
     void addRectangle(Rectangle<?> rectangle) {
         int id = rectangle.getId();
@@ -199,3 +197,4 @@ class RStar {
     }
 
 }
+

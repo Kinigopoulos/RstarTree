@@ -7,6 +7,8 @@ public class Main {
     //R* TREE VARIABLES
     // Defines that no more than the given number of rectangles or points can be contained in each node.
     public static final int MAX_ENTRIES = 3;
+    // Defines the percentage of minimum entries. Ideal value: 40% according to the paper.
+    public static final int MINIMUM_ENTRIES_PERCENTAGE = 40;
     // Dimensions of the database and/or RStar Tree.
     public static final int DIMENSIONS = 2;
 
