@@ -49,7 +49,11 @@ public class Main {
         points.add(new Point(6, new double[]{10, 6}));
         points.add(new Point(7, new double[]{1, 1}));
         points.add(new Point(8, new double[]{17, 16}));
-
+        points.add(new Point(9, new double[]{4, 4}));
+        points.add(new Point(10, new double[]{7, 2}));
+        points.add(new Point(11, new double[]{2, 19}));
+        points.add(new Point(12, new double[]{8, 7}));
+        points.add(new Point(13, new double[]{7, 8}));
 
 
         RStar rStar = new RStar(points.get(0));
@@ -57,6 +61,14 @@ public class Main {
         rStar.InsertData(points.get(2));
         rStar.InsertData(points.get(3));
         rStar.InsertData(points.get(4));
+        rStar.InsertData(points.get(5));
+        rStar.InsertData(points.get(6));
+        rStar.InsertData(points.get(7));
+        rStar.InsertData(points.get(8));
+        rStar.InsertData(points.get(9));
+        rStar.InsertData(points.get(10));
+        rStar.InsertData(points.get(11));
+        rStar.InsertData(points.get(12));
         rStar.printAll();
 
     }

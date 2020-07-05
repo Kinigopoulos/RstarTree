@@ -2,6 +2,7 @@ class Point extends SpaceObject{
 
     private double[] positions; //Array of doubles to represent the coordinate of the point in each dimension.
     private long id; //Id of the point.
+    private int fileId;
     private String name = "";
 
     /**
@@ -18,7 +19,7 @@ class Point extends SpaceObject{
         this.id=id;
     }
 
-    Point(long id, double[] positions, String name){
+    Point(long id, double[] positions, String name, int fileId){
         this(id, positions);
         this.name = name;
     }
@@ -39,6 +40,14 @@ class Point extends SpaceObject{
 
     double getMaxValue(int dimension) {
         return positions[dimension];
+    }
+
+    double[] getCenterPoint(){
+        return positions;
+    }
+
+    long getId(){
+        return id;
     }
 
     String getString(){

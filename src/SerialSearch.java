@@ -14,7 +14,7 @@ class SerialSearch {
     public static void RANGE_QUERY(double[] minValues, double[] maxValues) {
         int[] pointsSize = FileReader.GetDataProperties();
         for (int i = 0; i < pointsSize.length; i++) {
-            ArrayList<Point> points = FileReader.GetPoints("datafile" + (i + 1));
+            ArrayList<Point> points = FileReader.GetPoints(i + 1);
             for (Point point : points) {
                 if (ContainsPoint(point, minValues, maxValues)) {
                     System.out.println(point.getString());
@@ -31,7 +31,7 @@ class SerialSearch {
         }
         int[] pointsSize = FileReader.GetDataProperties();
         for (int i = 0; i < pointsSize.length; i++) {
-            ArrayList<Point> points = FileReader.GetPoints("datafile" + (i + 1));
+            ArrayList<Point> points = FileReader.GetPoints(i + 1);
             for (Point point : points) {
                 double distance = 0;
                 for (int j = 0; j < position.length; j++) {

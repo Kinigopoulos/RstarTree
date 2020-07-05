@@ -1,11 +1,13 @@
 import java.util.Arrays;
 
-class Rectangle<T> extends SpaceObject{
+class Rectangle<T> extends SpaceObject {
 
-    private int id; //Id of the Rectangle.
+    private long id; //Id of the Rectangle.
     private T[] entries; //Points/Rectangles in space.
+    private long[] entriesId;
     private int entriesSize;
     private Rectangle<?> parent; //Reference to its parent. If it is null then it's the root.
+    private long parentId;
     private boolean isLeafContainer; //It's true when this object contains entries and not rectangles.
 
     private double[] maxValues = new double[Main.DIMENSIONS];
@@ -32,8 +34,6 @@ class Rectangle<T> extends SpaceObject{
     Rectangle(Point[] points, int id) {
         this((T[]) points, id, true);
         isLeafContainer = true;
-        minValues = points[0].getPositions().clone();
-        maxValues = points[0].getPositions().clone();
         ResizeBoundingBox();
     }
 
@@ -43,17 +43,24 @@ class Rectangle<T> extends SpaceObject{
         for (Rectangle<?> rectangle : rectangles) {
             rectangle.parent = this;
         }
-        minValues = rectangles[0].getMinValues().clone();
-        maxValues = rectangles[0].getMaxValues().clone();
         ResizeBoundingBox();
     }
 
-    static Rectangle<?> CreateRectangle(SpaceObject[] objects, int id){
+    Rectangle(long[] entries, long id, long parent, boolean leafContainer, double[] min, double[] max){
+        entriesId = entries;
+        this.id = id;
+        parentId = parent;
+        isLeafContainer = leafContainer;
+        minValues = min;
+        maxValues = max;
+    }
+
+    static Rectangle<?> CreateRectangle(SpaceObject[] objects, int id) {
         Rectangle<?> result;
-        if(objects instanceof Rectangle[]){
-            result = new Rectangle<>((Rectangle<?>[])objects, id);
-        }else{
-            result = new Rectangle<>((Point[])objects, id);
+        if (objects instanceof Rectangle[]) {
+            result = new Rectangle<>((Rectangle<?>[]) objects, id);
+        } else {
+            result = new Rectangle<>((Point[]) objects, id);
         }
         return result;
     }
@@ -62,7 +69,7 @@ class Rectangle<T> extends SpaceObject{
     void printData() {
         Rectangle<?> parent = this.getParent();
         String tabs = "";
-        while (parent != null){
+        while (parent != null) {
             tabs += '\t';
             parent = parent.getParent();
         }
@@ -75,18 +82,37 @@ class Rectangle<T> extends SpaceObject{
             System.out.print(d + " ");
         }
         System.out.println("/ Area: " + area);
-        if (pointsToLeafs()){
+        if (pointsToLeafs()) {
             tabs += '\t';
-            for(int i=0; i<entriesSize; i++){
-                System.out.println(tabs + ((Point)entries[i]).getString());
+            for (int i = 0; i < entriesSize; i++) {
+                System.out.println(tabs + ((Point) entries[i]).getString());
             }
         }
+    }
+
+    String getData() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(isLeafContainer ? "D" : "R"); //If it points to leafs then is labelled as Data holder.
+        stringBuilder.append('\n');
+        stringBuilder.append(parent == null ? "-1" : parent.getId()).append('\n');
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
+            stringBuilder.append(minValues[i]).append('\n');
+            stringBuilder.append(maxValues[i]).append('\n');
+        }
+        for (int i = 0; i < entriesSize; i++) {
+            SpaceObject object = (SpaceObject) entries[i];
+            stringBuilder.append(object.getId()).append('\n');
+        }
+        return stringBuilder.toString();
     }
 
     //Finds lowest (and highest) values in each dimension.
     void ResizeBoundingBox() {
         if (isLeafContainer) {
             Point[] entries = (Point[]) this.entries;
+            minValues = entries[0].getPositions().clone();
+            maxValues = entries[0].getPositions().clone();
+
             for (int i = 0; i < entriesSize; i++) {
                 for (int j = 0; j < Main.DIMENSIONS; j++) {
                     if (minValues[j] > entries[i].getPosition(j)) {
@@ -99,6 +125,9 @@ class Rectangle<T> extends SpaceObject{
             }
         } else {
             Rectangle<?>[] entries = (Rectangle<?>[]) this.entries;
+            minValues = entries[0].getMinValues().clone();
+            maxValues = entries[0].getMaxValues().clone();
+
             for (int i = 0; i < entriesSize; i++) {
                 double[] rectangleMinValues = entries[i].getMinValues();
                 double[] rectangleMaxValues = entries[i].getMaxValues();
@@ -118,45 +147,56 @@ class Rectangle<T> extends SpaceObject{
     //This methods adds a point to this object.
     @SuppressWarnings("unchecked")
     void AddPoint(Point entry) {
-        entries[entriesSize] = (T)entry;
+        entries[entriesSize] = (T) entry;
         entriesSize++;
         ResizeBoundingBox();
     }
+
     @SuppressWarnings("unchecked")
     void AddPoint(Rectangle<?> entry) {
-        entries[entriesSize] = (T)entry;
+        entry.parent = this;
+        entries[entriesSize] = (T) entry;
         entriesSize++;
         ResizeBoundingBox();
     }
 
-    boolean isFull(){
-        return entriesSize == Main.MAX_ENTRIES;
+    boolean isFull() {
+        return entriesSize > Main.MAX_ENTRIES;
     }
 
-    Rectangle<?> getParent(){
+    Rectangle<?> getParent() {
+        //return parentId != -1 ? FileReader.getRectangle(parentId) : null;
         return parent;
     }
 
     //Returns the id.
-    int getId() {
+    long getId() {
         return id;
+    }
+
+    void setId(long id){
+        this.id = id;
     }
 
     //Returns the entries.
     T[] getEntries() {
         return Arrays.copyOfRange(entries, 0, entriesSize);
+//        if(isLeafContainer){
+//
+//        }
+//        return Arrays.copyOfRange(entries, 0, entriesSize);
     }
 
     @SuppressWarnings("unchecked")
-    void setEntries(SpaceObject[] entries){
-        this.entries = (T[])entries;
+    void setEntries(SpaceObject[] entries) {
+        this.entries = (T[]) entries;
     }
 
     int getEntriesSize() {
         return entriesSize;
     }
 
-    void setEntriesSize(int entriesSize){
+    void setEntriesSize(int entriesSize) {
         this.entriesSize = entriesSize;
         ResizeBoundingBox();
     }
@@ -177,9 +217,9 @@ class Rectangle<T> extends SpaceObject{
         return maxValues[dimension];
     }
 
-    double[] getCenterPoint(){
+    double[] getCenterPoint() {
         double[] result = new double[Main.DIMENSIONS];
-        for(int i=0; i< Main.DIMENSIONS; i++){
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
             result[i] = maxValues[i] - minValues[i];
         }
         return result;

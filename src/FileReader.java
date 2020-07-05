@@ -5,8 +5,11 @@ import java.util.Scanner;
 
 class FileReader {
 
+    static final String DATAFILE = "datafile";
+    static final String INDEXFILE = "indexfile";
+
     static int[] GetDataProperties() {
-        String fileName = "datafile0";
+        String fileName = DATAFILE + 0;
         int num;
         int[] size;
         try {
@@ -26,7 +29,8 @@ class FileReader {
         return size;
     }
 
-    static ArrayList<Point> GetPoints(String fileName) {
+    static ArrayList<Point> GetPoints(int fileId) {
+        String fileName = DATAFILE + fileId;
         ArrayList<Point> points = new ArrayList<>();
         try {
             Scanner scanner = new Scanner(new File(fileName));
@@ -44,7 +48,7 @@ class FileReader {
                     if (words.length > 3) {
                         name = words[3];
                     }
-                    Point point = new Point(id, position, name);
+                    Point point = new Point(id, position, name, fileId);
                     points.add(point);
                 } catch (ArrayIndexOutOfBoundsException | NumberFormatException ignored) {
                 }
@@ -55,6 +59,16 @@ class FileReader {
             System.out.println(fileName + " was not found...");
         }
         return points;
+    }
+
+    static Point GetPoint(long id, int fileId){
+        ArrayList<Point> points = GetPoints(fileId);
+        for(Point point : points){
+            if(point.getId() == id){
+                return point;
+            }
+        }
+        return null;
     }
 
     static void CreateDatafiles() {
@@ -81,7 +95,7 @@ class FileReader {
                 nodeData.append(words[Main.COLUMN_OF_ID]).append('\t');
                 for (int i = 0; i < Main.DIMENSIONS; i++) {
                     nodeData.append(words[Main.COLUMNS_OF_POSITION[i]]);
-                    if(i != Main.DIMENSIONS - 1){
+                    if (i != Main.DIMENSIONS - 1) {
                         nodeData.append('\t');
                     }
                 }
@@ -100,7 +114,7 @@ class FileReader {
                     currentSize += nodeSizeOnDisk;
                     nodeData = new StringBuilder();
                 } else {
-                    WriteDatafile(pageName + currentPage, content.toString());
+                    WriteFile(pageName + currentPage, content.toString());
                     nodesOfPage.add(nodes);
                     currentPage++;
                     content = new StringBuilder();
@@ -108,8 +122,8 @@ class FileReader {
                     nodes = 1;
                 }
             }
-            if(content.length() > 0){
-                WriteDatafile(pageName + currentPage, content.toString());
+            if (content.length() > 0) {
+                WriteFile(pageName + currentPage, content.toString());
                 nodesOfPage.add(nodes);
             }
             try (BufferedWriter out = new BufferedWriter(new FileWriter(pageName + 0))) {
@@ -128,7 +142,7 @@ class FileReader {
         }
     }
 
-    private static void WriteDatafile(String filename, String data){
+    private static void WriteFile(String filename, String data) {
         try (BufferedWriter out = new BufferedWriter(new FileWriter(filename))) {
             out.write(data);
         } catch (IOException e) {
@@ -136,4 +150,39 @@ class FileReader {
         }
     }
 
+    public static void CreateIndexFile(Rectangle<?> rectangle) {
+        WriteFile("indexFile" + rectangle.getId(), rectangle.getData());
+    }
+
+    public static Rectangle<?> getRectangle(long id){
+        Rectangle<?> result = null;
+        try {
+            Scanner scanner = new Scanner(new File("indexFile" + id));
+            String line = scanner.nextLine();
+            boolean pointsToLeafs = line.equals("D");
+            line = scanner.nextLine();
+            long parent = Long.parseLong(line);
+            double[] min = new double[Main.DIMENSIONS];
+            double[] max = new double[Main.DIMENSIONS];
+            line = scanner.nextLine();
+            for(int i=0; i<Main.DIMENSIONS; i++){
+                min[i] = Double.parseDouble(line);
+                line = scanner.nextLine();
+                max[i] = Double.parseDouble(line);
+                line = scanner.nextLine();
+            }
+            long[] children = new long[Main.MAX_ENTRIES];
+            int i = 0;
+            while(scanner.hasNextLine()){
+                children[i] = Long.parseLong(line);
+                line = scanner.nextLine();
+                i++;
+            }
+
+            result = new Rectangle<>(children, id, parent, pointsToLeafs, min, max);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
 }
