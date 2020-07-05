@@ -6,9 +6,9 @@ public class Main {
     /////STATIC VARIABLES\\\\\
     //R* TREE VARIABLES
     // Defines that no more than the given number of rectangles or points can be contained in each node.
-    public static final int MAX_ENTRIES = 3;
+    public static final int MAX_ENTRIES = 4;
     // Defines the percentage of minimum entries. Ideal value: 40% according to the paper.
-    public static final int MINIMUM_ENTRIES_PERCENTAGE = 40;
+    public static final int MINIMUM_ENTRIES_PERCENTAGE = 50;
     // Dimensions of the database and/or RStar Tree.
     public static final int DIMENSIONS = 2;
 
@@ -52,32 +52,12 @@ public class Main {
 
 
 
-        //Rectangle with points 0, 1, 2.
-        Rectangle<Point> A = new Rectangle<>(new Point[]{points.get(0), points.get(6)}, 1);
-        //Rectangle with points 3, 4, 5.
-        Rectangle<Point> B = new Rectangle<>(new Point[]{points.get(2), points.get(5)}, 2);
-
-        Rectangle<Rectangle<Object>> C = new Rectangle<>(new Rectangle[]{A, B}, 3);
-
-        //A.printData();
-        //B.printData();
-        //C.printData();
-
-        RStar rStar = new RStar(C);
-        rStar.addRectangle(B);
-        rStar.addRectangle(A);
-
-        //rStar.ChooseSubtree(points.get(3)).printData();
-
-        Point P1 = new Point(1, new double[]{1, 1});
-        Point P2 = new Point(2, new double[]{8, 13});
-        Point P3 = new Point(3, new double[]{-1, 0});
-        Point P4 = new Point(4, new double[]{7, 12});
-
-        Rectangle<Point> T1 = new Rectangle<>(new Point[]{P1, P2}, 20);
-        Rectangle<Point> T2 = new Rectangle<>(new Point[]{P3, P4}, 21);
-        //System.out.println(T1.OverlapCost(T2));
-
+        RStar rStar = new RStar(points.get(0));
+        rStar.InsertData(points.get(1));
+        rStar.InsertData(points.get(2));
+        rStar.InsertData(points.get(3));
+        rStar.InsertData(points.get(4));
+        rStar.printAll();
 
     }
 }

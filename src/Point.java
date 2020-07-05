@@ -1,4 +1,4 @@
-class Point {
+class Point extends SpaceObject{
 
     private double[] positions; //Array of doubles to represent the coordinate of the point in each dimension.
     private long id; //Id of the point.
@@ -31,6 +31,14 @@ class Point {
     // return position of Nth dimension.
     double getPosition(int n){
         return positions[n];
+    }
+
+    double getMinValue(int dimension) {
+        return positions[dimension];
+    }
+
+    double getMaxValue(int dimension) {
+        return positions[dimension];
     }
 
     String getString(){

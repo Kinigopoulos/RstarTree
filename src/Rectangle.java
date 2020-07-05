@@ -1,6 +1,6 @@
 import java.util.Arrays;
 
-class Rectangle<T> {
+class Rectangle<T> extends SpaceObject{
 
     private int id; //Id of the Rectangle.
     private T[] entries; //Points/Rectangles in space.
@@ -48,22 +48,43 @@ class Rectangle<T> {
         ResizeBoundingBox();
     }
 
+    static Rectangle<?> CreateRectangle(SpaceObject[] objects, int id){
+        Rectangle<?> result;
+        if(objects instanceof Rectangle[]){
+            result = new Rectangle<>((Rectangle<?>[])objects, id);
+        }else{
+            result = new Rectangle<>((Point[])objects, id);
+        }
+        return result;
+    }
+
     //Help Function, Prints minValues and maxValues.
     void printData() {
-        System.out.println("--- ID: " + id + " ---");
+        Rectangle<?> parent = this.getParent();
+        String tabs = "";
+        while (parent != null){
+            tabs += '\t';
+            parent = parent.getParent();
+        }
+        System.out.print(tabs + "ID: " + id + " /  ");
         for (double d : minValues) {
             System.out.print(d + " ");
         }
-        System.out.println();
+        System.out.print("/ ");
         for (double d : maxValues) {
             System.out.print(d + " ");
         }
-        System.out.println();
-        System.out.println("Area: " + area);
+        System.out.println("/ Area: " + area);
+        if (pointsToLeafs()){
+            tabs += '\t';
+            for(int i=0; i<entriesSize; i++){
+                System.out.println(tabs + ((Point)entries[i]).getString());
+            }
+        }
     }
 
     //Finds lowest (and highest) values in each dimension.
-    private void ResizeBoundingBox() {
+    void ResizeBoundingBox() {
         if (isLeafContainer) {
             Point[] entries = (Point[]) this.entries;
             for (int i = 0; i < entriesSize; i++) {
@@ -94,15 +115,26 @@ class Rectangle<T> {
         area = getArea(minValues, maxValues);
     }
 
-    //This methods adds a point to this object. If there is no space left returns false.
-    void AddPoint(T entry) {
-        entries[entriesSize] = entry;
+    //This methods adds a point to this object.
+    @SuppressWarnings("unchecked")
+    void AddPoint(Point entry) {
+        entries[entriesSize] = (T)entry;
+        entriesSize++;
+        ResizeBoundingBox();
+    }
+    @SuppressWarnings("unchecked")
+    void AddPoint(Rectangle<?> entry) {
+        entries[entriesSize] = (T)entry;
         entriesSize++;
         ResizeBoundingBox();
     }
 
     boolean isFull(){
-        return entriesSize != Main.MAX_ENTRIES + 1;
+        return entriesSize == Main.MAX_ENTRIES;
+    }
+
+    Rectangle<?> getParent(){
+        return parent;
     }
 
     //Returns the id.
@@ -115,12 +147,18 @@ class Rectangle<T> {
         return Arrays.copyOfRange(entries, 0, entriesSize);
     }
 
+    @SuppressWarnings("unchecked")
+    void setEntries(SpaceObject[] entries){
+        this.entries = (T[])entries;
+    }
+
     int getEntriesSize() {
         return entriesSize;
     }
 
     void setEntriesSize(int entriesSize){
         this.entriesSize = entriesSize;
+        ResizeBoundingBox();
     }
 
     double[] getMinValues() {
@@ -137,6 +175,14 @@ class Rectangle<T> {
 
     double getMaxValue(int dimension) {
         return maxValues[dimension];
+    }
+
+    double[] getCenterPoint(){
+        double[] result = new double[Main.DIMENSIONS];
+        for(int i=0; i< Main.DIMENSIONS; i++){
+            result[i] = maxValues[i] - minValues[i];
+        }
+        return result;
     }
 
     double getArea() {
@@ -179,6 +225,19 @@ class Rectangle<T> {
         return getArea(newMinValues, newMaxValues) - area;
     }
 
+    double AreaEnlargement(Rectangle<?> rectangle) {
+        double[] newMinValues = minValues.clone();
+        double[] newMaxValues = maxValues.clone();
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
+            if (newMinValues[i] > rectangle.getMinValue(i)) {
+                newMinValues[i] = rectangle.getMinValue(i);
+            } else if (newMaxValues[i] < rectangle.getMaxValue(i)) {
+                newMaxValues[i] = rectangle.getMaxValue(i);
+            }
+        }
+        return getArea(newMinValues, newMaxValues) - area;
+    }
+
     //Given another rectangle, calculate the overlap value with this one.
     double OverlapCost(Rectangle<?> rectangle) {
         double[] otherMinValues = rectangle.getMinValues();
@@ -201,19 +260,4 @@ class Rectangle<T> {
         return overlap;
     }
 
-    public static int Compare(Rectangle<?> a, Rectangle<?> b, int axis) {
-        double difference = a.getMinValue(axis) - b.getMinValue(axis);
-        if (difference < 0) {
-            return -1;
-        } else if (difference > 0) {
-            return 1;
-        }
-        difference = a.getMaxValue(axis) - b.getMaxValue(axis);
-        if (difference < 0) {
-            return -1;
-        } else if (difference > 0) {
-            return 1;
-        }
-        return 0;
-    }
 }
