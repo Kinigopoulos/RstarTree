@@ -1,5 +1,6 @@
-import java.io.File;
+
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Main {
 
@@ -14,7 +15,7 @@ public class Main {
 
     //WRITING DATAFILE VARIABLES
     // Defines the csv file which will saved in datafiles
-    public static final String FILENAME = "amenity_points.csv";
+    public static final String FILENAME = "amenity_points2.csv";
     // Defines if the program should ignore the first line because is a header and doesn't contain information.
     public static final boolean HAS_HEADER = true;
     // Defines maximum size (in bytes) for each datafile
@@ -28,16 +29,16 @@ public class Main {
     // Defines the column of data that indicate the name.
     public static final int COLUMN_OF_NAME = 4;
 
+
+
+    static final String[] NAME_OF_DIMENSIONS = {"X", "Y", "Z", "W"};
+
     public static void main(String[] args) {
 
         //Creates datafile files
         FileReader.CreateDatafiles();
 
-
-        SerialSearch.RANGE_QUERY(new double[]{26.25, 40.00}, new double[]{28.00, 41.5});
-        //SerialSearch.K_NN_QUERY(2, new double[]{26.52, 41.5});
-
-
+        //Initialize R* with datafiles
         RStar rStar = new RStar();
         int[] dataSizes = FileReader.GetDataProperties();
         for(int i = 0; i < dataSizes.length; i++){
@@ -47,53 +48,63 @@ public class Main {
             }
         }
 
-        rStar.RANGE_QUERY(new double[]{26.25, 40.00}, new double[]{28.00, 41.5});
-
-        /**
-         This is some test points to build R Star.
-         */
-
-        /*
-        ArrayList<Point> points = new ArrayList<>();
-        points.add(new Point(1, new double[]{5, 6}));
-        points.add(new Point(2, new double[]{12, 3}));
-        points.add(new Point(3, new double[]{14, 8}));
-        points.add(new Point(4, new double[]{2, 9}));
-        points.add(new Point(5, new double[]{8, 13}));
-        points.add(new Point(6, new double[]{10, 6}));
-        points.add(new Point(7, new double[]{1, 1}));
-        points.add(new Point(8, new double[]{17, 16}));
-        points.add(new Point(9, new double[]{4, 4}));
-        points.add(new Point(10, new double[]{7, 2}));
-        points.add(new Point(11, new double[]{2, 19}));
-        points.add(new Point(12, new double[]{8, 7}));
-        points.add(new Point(13, new double[]{7, 8}));
-        points.add(new Point(14, new double[]{2, 2}));
-        points.add(new Point(15, new double[]{3, 3}));
-        points.add(new Point(16, new double[]{12, 15}));
-        points.add(new Point(17, new double[]{1, 0}));
 
 
-        RStar rStar = new RStar(points.get(0));
-        rStar.InsertData(points.get(1));
-        rStar.InsertData(points.get(2));
-        rStar.InsertData(points.get(3));
-        rStar.InsertData(points.get(4));
-        rStar.InsertData(points.get(5));
-        rStar.InsertData(points.get(6));
-        rStar.InsertData(points.get(7));
-        rStar.InsertData(points.get(8));
-        rStar.InsertData(points.get(9));
-        rStar.InsertData(points.get(10));
-        rStar.InsertData(points.get(11));
-        rStar.InsertData(points.get(12));
-        rStar.InsertData(points.get(13));
-        rStar.InsertData(points.get(14));
-        rStar.InsertData(points.get(15));
-        rStar.InsertData(points.get(16));
-        rStar.printAll();
-        */
+        System.out.println("R* Tree Implementation");
+        String choice = "";
+        Scanner scanner = new Scanner(System.in);
+        while(!choice.equals("0")){
+            System.out.println("Type the number of the corresponding command to run it");
+            System.out.println("===================");
+            System.out.println("0. Exit");
+            System.out.println("1. R* Range Query");
+            System.out.println("2. R* K-nn Query");
+            System.out.println("3. Serial Search Range Query");
+            System.out.println("4. Serial Search K-nn Query");
+
+            choice = scanner.nextLine();
+
+            if(choice.equals("1")){
+                System.out.println("Minimum position");
+                double[] min = readPoint();
+                System.out.println("Maximum position");
+                double[] max = readPoint();
+                rStar.RANGE_QUERY(min, max);
+            }else if(choice.equals("2")){
+                System.out.println("Point's Position");
+                double[] position = readPoint();
+                Point point = new Point(-15, position);
+                System.out.println("Amount of neighbours (k > 0)");
+                int k = Integer.parseInt(scanner.nextLine());
 
 
+            }else if(choice.equals("3")){
+                System.out.println("Minimum position");
+                double[] min = readPoint();
+                System.out.println("Maximum position");
+                double[] max = readPoint();
+                SerialSearch.RANGE_QUERY(min, max);
+            }else if(choice.equals("4")){
+                System.out.println("Point's Position");
+                double[] position = readPoint();
+                System.out.println("Amount of neighbours (k > 0)");
+                int k = Integer.parseInt(scanner.nextLine());
+                SerialSearch.K_NN_QUERY(k, position);
+            }
+            System.out.println("===================\n");
+        }
+
+    }
+
+    static double[] readPoint(){
+        Scanner scanner = new Scanner(System.in);
+        double[] result = new double[DIMENSIONS];
+        for(int i=0; i<DIMENSIONS; i++){
+            if(i < NAME_OF_DIMENSIONS.length) System.out.print(NAME_OF_DIMENSIONS[i] + ": ");
+            else System.out.print((i+1)+"th dimension: ");
+
+            result[i] = Double.parseDouble(scanner.nextLine());
+        }
+        return result;
     }
 }
