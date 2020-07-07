@@ -50,6 +50,10 @@ class Point extends SpaceObject{
         return id;
     }
 
+    int getFileId(){
+        return fileId;
+    }
+
     String getString(){
         String s = "";
         for (double p : positions){

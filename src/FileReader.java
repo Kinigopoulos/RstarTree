@@ -162,6 +162,8 @@ class FileReader {
             boolean pointsToLeafs = line.equals("D");
             line = scanner.nextLine();
             long parent = Long.parseLong(line);
+            line = scanner.nextLine();
+            double area = Double.parseDouble(line);
             double[] min = new double[Main.DIMENSIONS];
             double[] max = new double[Main.DIMENSIONS];
             line = scanner.nextLine();
@@ -172,14 +174,29 @@ class FileReader {
                 line = scanner.nextLine();
             }
             long[] children = new long[Main.MAX_ENTRIES];
+            int[] pageId = new int[Main.MAX_ENTRIES];
             int i = 0;
             while(scanner.hasNextLine()){
                 children[i] = Long.parseLong(line);
                 line = scanner.nextLine();
+                if(pointsToLeafs){
+                    pageId[i] = Integer.parseInt(line);
+                    if(scanner.hasNextLine()){
+                        line = scanner.nextLine();
+                    }
+                }
                 i++;
             }
-
-            result = new Rectangle<>(children, id, parent, pointsToLeafs, min, max);
+            if(pointsToLeafs) {
+                Point[] points = new Point[i];
+                for (int j = 0; j < i; j++){
+                    points[j] = GetPoint(children[i], pageId[i]);
+                }
+                result = new Rectangle<>(points, id, parent, pointsToLeafs, min, max, area);
+            }
+            else {
+                result = new Rectangle<>(children, id, parent, pointsToLeafs, min, max, area);
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

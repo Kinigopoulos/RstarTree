@@ -6,9 +6,9 @@ public class Main {
     /////STATIC VARIABLES\\\\\
     //R* TREE VARIABLES
     // Defines that no more than the given number of rectangles or points can be contained in each node.
-    public static final int MAX_ENTRIES = 4;
+    public static final int MAX_ENTRIES = 10;
     // Defines the percentage of minimum entries. Ideal value: 40% according to the paper.
-    public static final int MINIMUM_ENTRIES_PERCENTAGE = 50;
+    public static final int MINIMUM_ENTRIES_PERCENTAGE = 40;
     // Dimensions of the database and/or RStar Tree.
     public static final int DIMENSIONS = 2;
 
@@ -30,16 +30,30 @@ public class Main {
 
     public static void main(String[] args) {
 
-        //OsmReader osmReader = new OsmReader("amenity_points.csv");
-        //ArrayList<Point> points = osmReader.getEntries();
-
+        //Creates datafile files
         FileReader.CreateDatafiles();
+
+
         SerialSearch.RANGE_QUERY(new double[]{26.25, 40.00}, new double[]{28.00, 41.5});
         //SerialSearch.K_NN_QUERY(2, new double[]{26.52, 41.5});
+
+
+        RStar rStar = new RStar();
+        int[] dataSizes = FileReader.GetDataProperties();
+        for(int i = 0; i < dataSizes.length; i++){
+            ArrayList<Point> points = FileReader.GetPoints(i);
+            for(Point point : points){
+                rStar.InsertData(point);
+            }
+        }
+
+        rStar.RANGE_QUERY(new double[]{26.25, 40.00}, new double[]{28.00, 41.5});
 
         /**
          This is some test points to build R Star.
          */
+
+        /*
         ArrayList<Point> points = new ArrayList<>();
         points.add(new Point(1, new double[]{5, 6}));
         points.add(new Point(2, new double[]{12, 3}));
@@ -54,6 +68,10 @@ public class Main {
         points.add(new Point(11, new double[]{2, 19}));
         points.add(new Point(12, new double[]{8, 7}));
         points.add(new Point(13, new double[]{7, 8}));
+        points.add(new Point(14, new double[]{2, 2}));
+        points.add(new Point(15, new double[]{3, 3}));
+        points.add(new Point(16, new double[]{12, 15}));
+        points.add(new Point(17, new double[]{1, 0}));
 
 
         RStar rStar = new RStar(points.get(0));
@@ -69,7 +87,13 @@ public class Main {
         rStar.InsertData(points.get(10));
         rStar.InsertData(points.get(11));
         rStar.InsertData(points.get(12));
+        rStar.InsertData(points.get(13));
+        rStar.InsertData(points.get(14));
+        rStar.InsertData(points.get(15));
+        rStar.InsertData(points.get(16));
         rStar.printAll();
+        */
+
 
     }
 }
