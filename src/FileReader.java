@@ -154,10 +154,32 @@ class FileReader {
         WriteFile("indexFile" + rectangle.getId(), rectangle.getData());
     }
 
+    public static void EditAreaOfIndex(long id, double area, double[] min, double[] max) {
+        try{
+            Scanner scanner = new Scanner(new File(INDEXFILE + id));
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append(scanner.nextLine()).append('\n');//D or R
+            stringBuilder.append(scanner.nextLine()).append('\n');//Parent ID
+            //Area
+            scanner.nextLine();
+            stringBuilder.append(area).append('\n');
+            for(int i=0; i < Main.DIMENSIONS; i++){
+                stringBuilder.append(min[i]).append('\n');
+                scanner.nextLine();
+                stringBuilder.append(max[i]).append('\n');
+                scanner.nextLine();
+            }
+            while (scanner.hasNextLine()){
+                stringBuilder.append(scanner.nextLine()).append('\n');
+            }
+            WriteFile(INDEXFILE + id, stringBuilder.toString());
+        } catch (FileNotFoundException ignored){}
+    }
+
     public static Rectangle<?> getRectangle(long id){
         Rectangle<?> result = null;
         try {
-            Scanner scanner = new Scanner(new File("indexFile" + id));
+            Scanner scanner = new Scanner(new File(INDEXFILE + id));
             String line = scanner.nextLine();
             boolean pointsToLeafs = line.equals("D");
             line = scanner.nextLine();

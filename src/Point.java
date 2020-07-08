@@ -22,6 +22,7 @@ class Point extends SpaceObject{
     Point(long id, double[] positions, String name, int fileId){
         this(id, positions);
         this.name = name;
+        this.fileId = fileId;
     }
 
     // return the coordinates of the Point

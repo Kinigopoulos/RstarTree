@@ -48,10 +48,11 @@ class Rectangle<T> extends SpaceObject {
         ResizeBoundingBox();
     }
 
-    Rectangle(long[] entries, long id, long parent, boolean leafContainer, double[] min, double[] max, double area) {
+    Rectangle(long[] entries, long id, long parentId, boolean leafContainer, double[] min, double[] max, double area) {
         entriesId = entries;
         this.id = id;
-        parentId = parent;
+        this.parentId = parentId;
+        if(id > 0) parent = FileReader.getRectangle(parentId);
         isLeafContainer = leafContainer;
         minValues = min;
         maxValues = max;
@@ -62,6 +63,7 @@ class Rectangle<T> extends SpaceObject {
         this.entries = entries;
         this.id = id;
         this.parentId = parentId;
+        if(id > 0) parent = FileReader.getRectangle(parentId);
         this.isLeafContainer = isLeafContainer;
         this.minValues = min;
         this.maxValues = max;
@@ -79,12 +81,6 @@ class Rectangle<T> extends SpaceObject {
     }
 
     void SaveRectangle() {
-        if(id == -1){
-            this.getData();
-            System.out.println("-------------------------------------YOU MESSED UP WITH ID-------------------------------------");
-            System.exit(0);
-
-        }
         FileReader.CreateIndexFile(this);
     }
 
@@ -93,12 +89,13 @@ class Rectangle<T> extends SpaceObject {
         Rectangle<?> parent = this.getParent();
 
         System.out.print(parent == null ? "" : parent.getId());
+        System.out.print(parent == null ? "" : parent.getId());
         String tabs = "";
         while (parent != null) {
             tabs += '\t';
             parent = parent.getParent();
         }
-        System.out.print(tabs + "ID: " + id + " /  ");
+        System.out.print(tabs + "ID: " + id + " /  " + loadedFromDisk + " /  ");
         for (double d : minValues) {
             System.out.print(d + " ");
         }
@@ -119,11 +116,22 @@ class Rectangle<T> extends SpaceObject {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(isLeafContainer ? "D" : "R"); //If it points to leafs then is labelled as Data holder.
         stringBuilder.append('\n');
-        stringBuilder.append(parent == null ? "-1" : parent.getId()).append('\n');
+        stringBuilder.append(id == 0 ? "-1" : (parent == null ? parentId : parent.getId())).append('\n');
         stringBuilder.append(area).append('\n');
         for (int i = 0; i < Main.DIMENSIONS; i++) {
             stringBuilder.append(minValues[i]).append('\n');
             stringBuilder.append(maxValues[i]).append('\n');
+        }
+        if(loadedFromDisk && !isLeafContainer){
+            int i = 0;
+            while (i < Main.MAX_ENTRIES){
+                if(entriesId[i] == 0){
+                    break;
+                }
+                stringBuilder.append(entriesId[i]).append('\n');
+                i++;
+            }
+            return stringBuilder.toString();
         }
         for (int i = 0; i < entriesSize; i++) {
             SpaceObject object = (SpaceObject) entries[i];
@@ -187,7 +195,11 @@ class Rectangle<T> extends SpaceObject {
                 max1[i] = max2[i];
             }
         }
-        parent.SaveRectangle();
+        parent.minValues = min1;
+        parent.maxValues = max1;
+        parent.area = getArea(min1, max1);
+
+        FileReader.EditAreaOfIndex(parent.id, parent.area, parent.minValues, parent.maxValues);
     }
 
     //This methods adds a point to this object.
@@ -210,8 +222,15 @@ class Rectangle<T> extends SpaceObject {
         return entriesSize > Main.MAX_ENTRIES;
     }
 
+    long FindParent(long id){
+        Rectangle<?> rectangle = FileReader.getRectangle(id);
+        return rectangle.parentId;
+    }
+
     Rectangle<?> getParent() {
-        if (loadedFromDisk) return parentId != -1 ? FileReader.getRectangle(parentId) : null;
+//        if (loadedFromDisk) {
+//            return parentId != -1 ? FileReader.getRectangle(parentId) : null;
+//        }
         return parent;
     }
 
@@ -222,7 +241,6 @@ class Rectangle<T> extends SpaceObject {
 
     void setId(long id) {
         this.id = id;
-        System.out.println("IS LOADED FROM DISK: " + loadedFromDisk + " and the id is: " + id);
         if(!pointsToLeafs()){
             Rectangle<?>[] children = (Rectangle<?>[])this.getEntries();
             for(Rectangle<?> child : children){
@@ -242,11 +260,6 @@ class Rectangle<T> extends SpaceObject {
         T[] result;
         if (isLeafContainer) {
             return Arrays.copyOfRange(entries, 0, entriesSize);
-//            Point[] points = new Point[entriesSize];
-//            for(int i=0; i<entriesSize; i++) {
-//                points[i] = FileReader.GetPoint(entriesId[i], pagesId[i]);
-//            }
-//            result = (T[])points;
         } else {
             Rectangle<?>[] rectangles = new Rectangle[entriesSize];
             for (int i = 0; i < entriesSize; i++) {

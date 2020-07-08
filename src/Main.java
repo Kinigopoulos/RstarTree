@@ -7,15 +7,15 @@ public class Main {
     /////STATIC VARIABLES\\\\\
     //R* TREE VARIABLES
     // Defines that no more than the given number of rectangles or points can be contained in each node.
-    public static final int MAX_ENTRIES = 10;
+    public static final int MAX_ENTRIES = 4;
     // Defines the percentage of minimum entries. Ideal value: 40% according to the paper.
-    public static final int MINIMUM_ENTRIES_PERCENTAGE = 40;
+    public static final int MINIMUM_ENTRIES_PERCENTAGE = 51;
     // Dimensions of the database and/or RStar Tree.
     public static final int DIMENSIONS = 2;
 
     //WRITING DATAFILE VARIABLES
     // Defines the csv file which will saved in datafiles
-    public static final String FILENAME = "amenity_points2.csv";
+    public static final String FILENAME = "amenity_points.csv";
     // Defines if the program should ignore the first line because is a header and doesn't contain information.
     public static final boolean HAS_HEADER = true;
     // Defines maximum size (in bytes) for each datafile
@@ -42,15 +42,14 @@ public class Main {
         RStar rStar = new RStar();
         int[] dataSizes = FileReader.GetDataProperties();
         for(int i = 0; i < dataSizes.length; i++){
-            ArrayList<Point> points = FileReader.GetPoints(i);
+            ArrayList<Point> points = FileReader.GetPoints(i + 1);
             for(Point point : points){
                 rStar.InsertData(point);
             }
+
         }
 
-
-
-        System.out.println("R* Tree Implementation");
+        System.out.println("\n\nR* Tree Implementation");
         String choice = "";
         Scanner scanner = new Scanner(System.in);
         while(!choice.equals("0")){
