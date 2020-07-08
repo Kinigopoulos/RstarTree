@@ -370,19 +370,66 @@ class Rectangle<T> extends SpaceObject {
         return true;
     }
 
+    double MinimumDistance(Point point){
+        double result = 0;
+        for(int i=0; i<Main.DIMENSIONS; i++){
+            double r;
+            double p = point.getPosition(i);
+            if(p < minValues[i]){
+                r = minValues[i];
+            }else {
+                r = Math.min(p, maxValues[i]);
+            }
+            result += Math.pow(p - r, 2);
+        }
+        return result;
+    }
+
+    double MinMaxDistance(Point point){
+        double result = Double.MAX_VALUE;
+        for(int i=0; i<Main.DIMENSIONS; i++){
+            double dist = point.getPosition(i);
+            if(dist <= (minValues[i] + maxValues[i]) / 2){
+                dist -= minValues[i];
+            } else {
+                dist -= maxValues[i];
+            }
+            dist = Math.pow(dist, 2);
+            double sum = 0;
+            for(int j=0; j<Main.DIMENSIONS; j++){
+                if(i != j){
+                    double p = point.getPosition(j);
+                    if(p >= (minValues[j] + maxValues[j]) / 2){
+                        sum += Math.pow(p - minValues[i], 2);
+                    }else{
+                        sum += Math.pow(p - maxValues[i], 2);
+                    }
+                }
+            }
+            dist += sum;
+            if(dist < result){
+                result = dist;
+            }
+        }
+        return result;
+    }
+
     //Given another rectangle, calculate the overlap value with this one.
     double OverlapCost(Rectangle<?> rectangle) {
         double[] otherMinValues = rectangle.getMinValues();
         double[] otherMaxValues = rectangle.getMaxValues();
+        if(Arrays.equals(otherMinValues, minValues) && Arrays.equals(otherMaxValues, maxValues)){
+            return area;
+        }
         double overlap = 1;
         for (int i = 0; i < Main.DIMENSIONS; i++) {
-            if (this.maxValues[i] > otherMinValues[i] && this.maxValues[i] < otherMaxValues[i]) {
+            if (this.maxValues[i] >= otherMinValues[i] && this.maxValues[i] <= otherMaxValues[i]) {
                 overlap *= this.maxValues[i] - Math.max(otherMinValues[i], this.minValues[i]);
-            } else if (this.minValues[i] < otherMaxValues[i] && this.minValues[i] > otherMinValues[i]) {
+            } else if (this.minValues[i] <= otherMaxValues[i] && this.minValues[i] >= otherMinValues[i]) {
                 overlap *= Math.min(otherMaxValues[i], this.maxValues[i]) - this.minValues[i];
-            } else if (this.maxValues[i] > otherMaxValues[i] && this.minValues[i] < otherMinValues[i]) {
+            } else if (this.maxValues[i] >= otherMaxValues[i] && this.minValues[i] <= otherMinValues[i]) {
                 overlap *= otherMaxValues[i] - otherMinValues[i];
-            } else if (this.maxValues[i] < otherMaxValues[i] && this.minValues[i] > otherMinValues[i]) {
+            } else if (this.maxValues[i] <= otherMaxValues[i] && this.minValues[i] >= otherMinValues[i]) {
                 overlap *= this.maxValues[i] - this.minValues[i];
             } else {
                 overlap = 0;
