@@ -72,11 +72,9 @@ public class Main {
             }else if(choice.equals("2")){
                 System.out.println("Point's Position");
                 double[] position = readPoint();
-                Point point = new Point(-15, position);
                 System.out.println("Amount of neighbours (k > 0)");
                 int k = Integer.parseInt(scanner.nextLine());
-
-
+                rStar.K_NN_QUERY(k, position);
             }else if(choice.equals("3")){
                 System.out.println("Minimum position");
                 double[] min = readPoint();

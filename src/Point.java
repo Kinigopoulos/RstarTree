@@ -1,4 +1,4 @@
-class Point extends SpaceObject{
+class Point extends SpaceObject {
 
     private double[] positions; //Array of doubles to represent the coordinate of the point in each dimension.
     private long id; //Id of the point.
@@ -10,28 +10,28 @@ class Point extends SpaceObject{
      * Rectangles will be the area that'll contain all the nodes.
      */
 
-    Point(){
+    Point() {
         positions = new double[Main.DIMENSIONS];
     }
 
-    Point(long id, double[] positions){
+    Point(long id, double[] positions) {
         this.positions = positions;
-        this.id=id;
+        this.id = id;
     }
 
-    Point(long id, double[] positions, String name, int fileId){
+    Point(long id, double[] positions, String name, int fileId) {
         this(id, positions);
         this.name = name;
         this.fileId = fileId;
     }
 
     // return the coordinates of the Point
-    double[] getPositions(){
+    double[] getPositions() {
         return positions;
     }
 
     // return position of Nth dimension.
-    double getPosition(int n){
+    double getPosition(int n) {
         return positions[n];
     }
 
@@ -43,24 +43,32 @@ class Point extends SpaceObject{
         return positions[dimension];
     }
 
-    double[] getCenterPoint(){
+    double[] getCenterPoint() {
         return positions;
     }
 
-    long getId(){
+    long getId() {
         return id;
     }
 
-    int getFileId(){
+    int getFileId() {
         return fileId;
     }
 
-    String getString(){
+    double DistanceFrom(Point other) {
+        double result = 0;
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
+            result += Math.pow(positions[i] - other.positions[i], 2);
+        }
+        return result;
+    }
+
+    String getString() {
         String s = "";
-        for (double p : positions){
+        for (double p : positions) {
             s = s + p + "\t";
         }
-        s += "ID: "+id;
+        s += "ID: " + id;
         s += "\t" + name;
         return s;
     }
