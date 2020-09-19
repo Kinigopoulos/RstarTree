@@ -4,22 +4,22 @@ import java.util.Scanner;
 
 public class Main {
 
-    /////STATIC VARIABLES\\\\\
-    //R* TREE VARIABLES
+    ///// STATIC VARIABLES \\\\\
+    //=== R* TREE VARIABLES ===
     // Defines that no more than the given number of rectangles or points can be contained in each node.
     public static final int MAX_ENTRIES = 4;
     // Defines the percentage of minimum entries. Ideal value: 40% according to the paper.
-    public static final int MINIMUM_ENTRIES_PERCENTAGE = 51;
+    public static final int MINIMUM_ENTRIES_PERCENTAGE = 40;
     // Dimensions of the database and/or RStar Tree.
     public static final int DIMENSIONS = 2;
 
-    //WRITING DATAFILE VARIABLES
+    //=== WRITING DATAFILE VARIABLES ===
     // Defines the csv file which will saved in datafiles
-    public static final String FILENAME = "amenity_points.csv";
+    public static final String FILENAME = "amenity_points2.csv";
     // Defines if the program should ignore the first line because is a header and doesn't contain information.
     public static final boolean HAS_HEADER = true;
     // Defines maximum size (in bytes) for each datafile
-    public static final int MAXIMUM_SIZE = 500;
+    public static final int MAXIMUM_SIZE = 700;
     // Defines the character that splits data into columns
     public static final String SEPARATOR = ",";
     // Defines the columns of data that indicate position. Ex.: {0, 1} indicates that x is in 0th column, y is in 1st.
@@ -41,13 +41,15 @@ public class Main {
         //Initialize R* with datafiles
         RStar rStar = new RStar();
         int[] dataSizes = FileReader.GetDataProperties();
+        double TIME = System.nanoTime();
         for(int i = 0; i < dataSizes.length; i++){
             ArrayList<Point> points = FileReader.GetPoints(i + 1);
             for(Point point : points){
                 rStar.InsertData(point);
             }
-
         }
+        System.out.println("STRUCTURED IN: " + (System.nanoTime() - TIME));
+        FileReader.CheckRStar();
 
         System.out.println("\n\nR* Tree Implementation");
         String choice = "";
@@ -62,32 +64,42 @@ public class Main {
             System.out.println("4. Serial Search K-nn Query");
 
             choice = scanner.nextLine();
-
+            long startTime = -1;
+            long endTime = 0;
             if(choice.equals("1")){
                 System.out.println("Minimum position");
                 double[] min = readPoint();
                 System.out.println("Maximum position");
                 double[] max = readPoint();
+                startTime = System.nanoTime();
                 rStar.RANGE_QUERY(min, max);
+                endTime = System.nanoTime();
             }else if(choice.equals("2")){
                 System.out.println("Point's Position");
                 double[] position = readPoint();
                 System.out.println("Amount of neighbours (k > 0)");
                 int k = Integer.parseInt(scanner.nextLine());
+                startTime = System.nanoTime();
                 rStar.K_NN_QUERY(k, position);
+                endTime = System.nanoTime();
             }else if(choice.equals("3")){
                 System.out.println("Minimum position");
                 double[] min = readPoint();
                 System.out.println("Maximum position");
                 double[] max = readPoint();
+                startTime = System.nanoTime();
                 SerialSearch.RANGE_QUERY(min, max);
+                endTime = System.nanoTime();
             }else if(choice.equals("4")){
                 System.out.println("Point's Position");
                 double[] position = readPoint();
                 System.out.println("Amount of neighbours (k > 0)");
                 int k = Integer.parseInt(scanner.nextLine());
+                startTime = System.nanoTime();
                 SerialSearch.K_NN_QUERY(k, position);
+                endTime = System.nanoTime();
             }
+            if(startTime != -1) System.out.println("\nExecuted in " + (endTime - startTime) + " seconds");
             System.out.println("===================\n");
         }
 

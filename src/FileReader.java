@@ -1,6 +1,8 @@
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 class FileReader {
@@ -151,7 +153,88 @@ class FileReader {
     }
 
     public static void CreateIndexFile(Rectangle<?> rectangle) {
+        float startTime = System.nanoTime();
         WriteFile("indexFile" + rectangle.getId(), rectangle.getData());
+        float endTime = System.nanoTime();
+        //System.out.println("Wrote a file in: " + (endTime - startTime));
+    }
+
+
+    public static void CheckRStar(){
+        ArrayList<Rectangle<?>> rectangles = new ArrayList<>();
+        rectangles.add(getRectangle(0));
+
+        boolean[] ids = new boolean[(int)RStar.nodes];
+        ids[0] = true;
+
+
+        while(!rectangles.isEmpty()){
+            Rectangle<?> N = rectangles.get(0);
+            rectangles.remove(0);
+            if(N.pointsToLeafs()){
+                continue;
+            }
+            Rectangle<?>[] children = (Rectangle<?>[]) N.getEntries();
+
+            for(int i = 0; i < N.getEntriesSize(); i++){
+                int id = (int)children[i].getId();
+                if(ids[id]){
+                    System.out.println("DOUBLE ID: " + id);
+                }
+                ids[id] = true;
+                rectangles.add(children[i]);
+            }
+
+
+        }
+
+        boolean correct = true;
+        int i = 0;
+        for(boolean id : ids){
+            if(!id){
+                correct = false;
+                System.out.println("NON EXISTENT ID: " + i);
+            }
+            i++;
+        }
+        System.out.println("Rstar's correctness is " + correct);
+    }
+
+    static HashSet<Long> ids = new HashSet<>();
+    public static void CheckForDuplicates(){
+
+        int id = 0;
+        ids = new HashSet<>();
+        while (id < RStar.nodes){
+            try{
+                Scanner scanner = new Scanner(new File(INDEXFILE + id));
+                if(scanner.nextLine().equals("D")){
+                    //System.out.println("ID TO READ " + id);
+                    Rectangle<?> rectangle = getRectangle(id);
+                    Point[] points = (Point[]) rectangle.getEntries();
+
+                    scanner.nextLine(); scanner.nextLine(); scanner.nextLine();
+                    scanner.nextLine(); scanner.nextLine();
+
+                    for(int i=0; i<rectangle.getEntriesSize(); i++){
+
+                        if(ids.contains(points[i].getId())){
+                            long ahaId = points[i].getId();
+                            System.out.println(points[i].getId());
+
+                        }else{
+                            ids.add(points[i].getId());
+                        }
+
+                    }
+
+                }
+                id++;
+            }catch (FileNotFoundException ignored){
+                System.out.println("File not found");
+                break;
+            }
+        }
     }
 
     public static void EditAreaOfIndex(long id, double area, double[] min, double[] max) {
@@ -173,10 +256,14 @@ class FileReader {
                 stringBuilder.append(scanner.nextLine()).append('\n');
             }
             WriteFile(INDEXFILE + id, stringBuilder.toString());
+
+
         } catch (FileNotFoundException ignored){}
     }
 
     public static Rectangle<?> getRectangle(long id){
+        float startTime = System.nanoTime();
+
         Rectangle<?> result = null;
         try {
             Scanner scanner = new Scanner(new File(INDEXFILE + id));
@@ -195,7 +282,7 @@ class FileReader {
                 max[i] = Double.parseDouble(line);
                 line = scanner.nextLine();
             }
-            long[] children = new long[Main.MAX_ENTRIES];
+            long[] children = new long[Main.MAX_ENTRIES + 1];
             int[] pageId = new int[Main.MAX_ENTRIES];
             int i = 0;
             while(scanner.hasNextLine()){
@@ -210,18 +297,32 @@ class FileReader {
                 i++;
             }
             if(pointsToLeafs) {
-                Point[] points = new Point[i];
+                Point[] points = new Point[Main.MAX_ENTRIES + 1];
                 for (int j = 0; j < i; j++){
-                    points[j] = GetPoint(children[i], pageId[i]);
+                    points[j] = GetPoint(children[j], pageId[j]);
                 }
-                result = new Rectangle<>(points, id, parent, pointsToLeafs, min, max, area);
+                result = new Rectangle<>(points, i, id, parent, true, min, max, area);
             }
             else {
-                result = new Rectangle<>(children, id, parent, pointsToLeafs, min, max, area);
+                children[i] = Long.parseLong(line);
+                i++;
+                result = new Rectangle<>(children, i, id, parent, false, min, max, area);
             }
         } catch (FileNotFoundException e) {
+            System.out.println("Couldn't find IndexFile" + id);
+            e.printStackTrace();
+        } catch (NoSuchElementException e){
+            System.out.println("Failed to read IndexFile" + id);
             e.printStackTrace();
         }
+
+        StackTraceElement[] stacktrace = Thread.currentThread().getStackTrace();
+        StackTraceElement e = stacktrace[2];//maybe this number needs to be corrected
+        String methodName = e.getMethodName();
+
+        float endTime = System.nanoTime();
+        //System.out.println("Read a file in: " + (endTime - startTime) + "\nID: " + id + "\tMethod used: " + methodName);
+
         return result;
     }
 }

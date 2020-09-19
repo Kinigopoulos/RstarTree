@@ -7,7 +7,8 @@ class RStar {
     private Rectangle<?> Root;
     private HashSet<Integer> reinsertLevels;
     private int leafLevel;
-    private int nodes;
+    public static long nodes; //Used to track the amount of R containers
+    private KnnPoint[] nearestKNN; //Used only in k-nn queries
 
     RStar() {
         Root = null;
@@ -16,35 +17,124 @@ class RStar {
         reinsertLevels = new HashSet<>();
     }
 
-    void RANGE_QUERY(double[] minValues, double[] maxValues){
+    void RANGE_QUERY(double[] minValues, double[] maxValues) {
         Point pointMin = new Point(-10, minValues);
         Point pointMax = new Point(-11, maxValues);
         Rectangle<?> query = new Rectangle<>(new Point[]{pointMax, pointMin}, -10);
 
         ArrayList<Rectangle<?>> rectanglesToLook = new ArrayList<>();
         rectanglesToLook.add(Root);
-        while (!rectanglesToLook.isEmpty()){
+        while (!rectanglesToLook.isEmpty()) {
             Rectangle<?>[] children = (Rectangle<?>[]) rectanglesToLook.get(0).getEntries();
             int childrenSize = rectanglesToLook.get(0).getEntriesSize();
-            if(children[0].pointsToLeafs()){
-                for(int i = 0; i < childrenSize; i++){
-                    Point[] points = (Point[])children[i].getEntries();
-                    for(Point point : points){
-                        if(Rectangle.ContainsPoint(point, minValues, maxValues)){
+            if (children[0].pointsToLeafs()) {
+                for (int i = 0; i < childrenSize; i++) {
+                    Point[] points = (Point[]) children[i].getEntries();
+                    for (Point point : points) {
+                        if (Rectangle.ContainsPoint(point, minValues, maxValues)) {
                             System.out.println(point.getString());
                         }
                     }
                 }
             } else {
                 for (int i = 0; i < childrenSize; i++) {
-                    if(children[i].OverlapCost(query) > 0){
+                    if (children[i].OverlapCost(query) > 0) {
                         rectanglesToLook.add(children[i]);
-                    } else {
-                        children[i].printData();
                     }
                 }
             }
             rectanglesToLook.remove(0);
+        }
+    }
+
+    static class KnnPoint {
+        Point point;
+        double distance;
+
+        KnnPoint(Point point, double distance) {
+            this.point = point;
+            this.distance = distance;
+        }
+    }
+
+    static class ActiveBranchList {
+        Rectangle<?> rectangle;
+        double MinDist;
+        double MinMaxDist;
+        double DistanceFromCenter;
+
+        ActiveBranchList(Rectangle<?> rectangle, Point query) {
+            this.rectangle = rectangle;
+            MinDist = rectangle.MinimumDistance(query);
+            MinMaxDist = rectangle.MinMaxDistance(query);
+            DistanceFromCenter = DistanceOf(rectangle.getCenterPoint(), query.getPositions());
+        }
+
+        static int compareTo(ActiveBranchList a, ActiveBranchList b) {
+            if (a.MinDist < b.MinDist) {
+                return 1;
+            } else if (a.MinDist > b.MinDist) {
+                return -1;
+            }
+            return 0;
+        }
+    }
+
+    void K_NN_QUERY(int k, double[] position) {
+        nearestKNN = new KnnPoint[k];
+        for (int i = 0; i < k; i++) {
+            nearestKNN[i] = new KnnPoint(null, Double.MAX_VALUE);
+        }
+        Point point = new Point(-20, position);
+        FindNeighbours(k, Root, point);
+        for (KnnPoint knnPoint : nearestKNN) {
+            Point p = knnPoint.point;
+            System.out.println(p.getString());
+        }
+        nearestKNN = null;
+    }
+
+    private void FindNeighbours(int k, Rectangle<?> rectangle, Point query) {
+        rectangle.printData();
+        if (rectangle.pointsToLeafs()) {
+            Point[] points = (Point[]) rectangle.getEntries();
+            for (Point point : points) {
+                boolean exists = false;
+                for(KnnPoint knnPoint : nearestKNN){
+                    if(knnPoint.point == point){
+                        exists = true;
+                        break;
+                    }
+                }
+                if(exists){
+                    break;
+                }
+                double distance = point.DistanceFrom(query);
+                if (nearestKNN[k - 1].distance > distance) {
+                    int j;
+                    for (j = k - 2; j >= 0 && nearestKNN[j].distance > distance; j--) {
+                        nearestKNN[j + 1] = nearestKNN[j];
+                    }
+                    nearestKNN[j + 1] = new KnnPoint(point, distance);
+                }
+            }
+        } else {
+            Rectangle<?>[] children = (Rectangle<?>[]) rectangle.getEntries();
+            int size = rectangle.getEntriesSize();
+            ActiveBranchList[] ABL = new ActiveBranchList[size];
+            for (int i = 0; i < size; i++) {
+                ABL[i] = new ActiveBranchList(children[i], query);
+            }
+            Arrays.sort(ABL, ActiveBranchList::compareTo);
+
+            for(int i = 0; i < size; i++){
+                if(nearestKNN[k-1] != null){
+                    if(ABL[i].MinDist >= nearestKNN[k-1].distance){
+                        break;
+                    }
+                }
+                FindNeighbours(k, ABL[i].rectangle, query);
+            }
         }
     }
 
@@ -211,7 +301,7 @@ class RStar {
         for (int i = m + 1; i < m + kMax; i++) {
             double currentOverlap = 0;
 
-            Rectangle<?> split1 = Rectangle.CreateRectangle((Arrays.copyOfRange(children, 0, i)), (int)rectangle.getId());
+            Rectangle<?> split1 = Rectangle.CreateRectangle((Arrays.copyOfRange(children, 0, i)), (int) rectangle.getId());
             Rectangle<?> split2 = Rectangle.CreateRectangle(Arrays.copyOfRange(children, i, children.length), -2);
 
             currentOverlap += Overlap(split1);
@@ -236,15 +326,26 @@ class RStar {
     void InsertData(Point point) {
         System.out.println("============= INSERTING " + point.getId() + " =============");
         System.out.println("===========================================================");
-        if(Root != null) {
+        if (Root != null) {
             Insert(point, leafLevel);
             reinsertLevels = new HashSet<>();
-        }else{
+        } else {
             Root = new Rectangle<>(new Point[]{point}, 0);
+            Root.SaveRectangle();
         }
+
+        //Root.printData();
+        Root = FileReader.getRectangle(0);
     }
 
     private void Insert(Object Entry, int level) {
+
+        /**
+         *
+         */
+        double startTime = System.nanoTime();
+
+
         final boolean isPoint = Entry instanceof Point;
         Rectangle<?> RectEntry;
         if (isPoint) {
@@ -254,37 +355,56 @@ class RStar {
         }
         Rectangle<?> N = ChooseSubtree(RectEntry, level);
 
-        if (Entry instanceof Point) {
+        if (isPoint) {
             N.AddPoint((Point) Entry);
         } else {
             N.AddPoint((Rectangle<?>) Entry);
         }
+
+        /**
+         *
+         */
+        System.out.printf("-----> Chose subtree in: %f\n", (System.nanoTime() - startTime));
+        startTime = System.nanoTime();
+
         Rectangle<?> M = N;
         int levelCounter = 0;
         while (M.isFull()) {
             System.out.println("Overflow happened on " + M.getId());
+            //M.printData();
 
             Rectangle<?> result = OverflowTreatment(M, level - levelCounter);
-            if(result == null){
+            levelCounter++;
+            if (result == null) {
                 break;
             }
 
             Rectangle<?> parent = M.getParent();
 
-            if(M.getId() > 0){
+            if (M.getId() > 0) {
                 parent.AddPoint(result);
                 result.setId(result.getId());
                 result.SaveRectangle();
                 parent.SaveRectangle();
-
             } else {
-                ChangeRoot(result);
+                ChangeRoot(result, M);
                 break;
             }
             M = parent;
-            levelCounter++;
+
+            //System.out.println("OverFlow sorted.");
         }
 
+        /**
+         *
+         */
+        System.out.printf("-----> Resolved Overflows in: %f\n", (System.nanoTime() - startTime));
+        startTime = System.nanoTime();
+
+
+        if(levelCounter == 0) {
+            N.SaveRectangle();
+        }
         M = N.getParent();
         while (M != null) {
 
@@ -293,17 +413,26 @@ class RStar {
             N = M;
             M = M.getParent();
         }
+
+
+        /**
+         *
+         */
+        System.out.printf("-----> Fixed Bounding boxes in: %f\n", (System.nanoTime() - startTime));
+        startTime = System.nanoTime();
     }
 
-    private void ChangeRoot(Rectangle<?> result){
-        Rectangle<?> previousRoot = Root;
+    private void ChangeRoot(Rectangle<?> result, Rectangle<?> previousRoot) {
+        System.out.println("***CHANGING ROOT***");
         previousRoot.setId(nodes);
         nodes++;
         Root = new Rectangle<>(new Rectangle<?>[]{previousRoot, result}, 0); //New Root
 
         Root.SaveRectangle();
+
         result.setId(result.getId());
         result.SaveRectangle();
+        previousRoot.setId(previousRoot.getId());
         previousRoot.SaveRectangle();
 
         leafLevel++;
@@ -311,9 +440,9 @@ class RStar {
 
     private Rectangle<?> OverflowTreatment(Rectangle<?> N, int level) {
         if (!reinsertLevels.contains(level) && N.getId() > 0) {
-
             reinsertLevels.add(level);
             Reinsert(N, level);
+            System.out.println("Reinsert Finished on level " + level + ". ID of Overflow: " + N.getId());
             return null;
         }
         return Split(N);
@@ -358,6 +487,7 @@ class RStar {
         N.SaveRectangle();
 
         for (int i = length - p; i < length; i++) {
+            System.out.println("Re-Inserting " + struct[i].child.getId());
             Insert(struct[i].child, level);
         }
     }
