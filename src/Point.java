@@ -1,9 +1,12 @@
+import java.util.Objects;
+
 class Point extends SpaceObject {
 
     private double[] positions; //Array of doubles to represent the coordinate of the point in each dimension.
     private long id; //Id of the point.
     private int fileId;
     private String name = "";
+    private boolean loadFromDatafile;
 
     /**
      * Maybe we want to add names here. Points will be the actual node itself.
@@ -19,10 +22,20 @@ class Point extends SpaceObject {
         this.id = id;
     }
 
+    Point(long id, double[] positions, int fileId) {
+        this(id, positions);
+        this.fileId = fileId;
+        loadFromDatafile = true;
+    }
+
     Point(long id, double[] positions, String name, int fileId) {
         this(id, positions);
         this.name = name;
         this.fileId = fileId;
+    }
+
+    public void LoadNameFromDataFile(){
+        this.name = Objects.requireNonNull(FileReader.GetPoint(this.id, this.fileId)).name;
     }
 
     // return the coordinates of the Point
@@ -69,6 +82,9 @@ class Point extends SpaceObject {
             s = s + p + "\t";
         }
         s += "ID: " + id;
+        if(loadFromDatafile){
+            name = Objects.requireNonNull(FileReader.GetPoint(id, fileId)).name;
+        }
         s += "\t" + name;
         return s;
     }

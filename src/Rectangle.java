@@ -6,7 +6,6 @@ class Rectangle<T> extends SpaceObject {
     private T[] entries; //Points/Rectangles in space.
     private long[] entriesId;
     private int entriesSize;
-    //private Rectangle<?> parent; //Reference to its parent. If it is null then it's the root.
     private long parentId = -1;
     private boolean isLeafContainer; //It's true when this object contains entries and not rectangles.
 
@@ -86,7 +85,6 @@ class Rectangle<T> extends SpaceObject {
     }
 
     void SaveRectangle() {
-        //printData();
         FileReader.CreateIndexFile(this);
     }
 
@@ -130,10 +128,10 @@ class Rectangle<T> extends SpaceObject {
             stringBuilder.append(minValues[i]).append('\n');
             stringBuilder.append(maxValues[i]).append('\n');
         }
-        if(loadedFromDisk && !isLeafContainer){
+        if (loadedFromDisk && !isLeafContainer) {
             int i = 0;
-            while (i < Main.MAX_ENTRIES){
-                if(entriesId[i] == 0){
+            while (i < Main.MAX_ENTRIES) {
+                if (entriesId[i] == 0) {
                     break;
                 }
                 stringBuilder.append(entriesId[i]).append('\n');
@@ -147,6 +145,10 @@ class Rectangle<T> extends SpaceObject {
             if (isLeafContainer) {
                 Point point = (Point) object;
                 stringBuilder.append(point.getFileId()).append('\n');
+
+                for (int j = 0; j < Main.DIMENSIONS; j++) {
+                    stringBuilder.append(point.getPosition(j)).append('\n');
+                }
             }
         }
         return stringBuilder.toString();
@@ -190,19 +192,27 @@ class Rectangle<T> extends SpaceObject {
         area = getArea(minValues, maxValues);
     }
 
-    static void ResizeBoundingBoxAfterInsert(Rectangle<?> parent, Rectangle<?> child){
+    static void ResizeBoundingBoxAfterInsert(Rectangle<?> parent, Rectangle<?> child) {
         double[] min1 = parent.getMinValues();
         double[] min2 = child.getMinValues();
         double[] max1 = parent.getMaxValues();
         double[] max2 = child.getMaxValues();
-        for(int i = 0; i < Main.DIMENSIONS; i++){
-            if(min1[i] > min2[i]){
+        boolean affected = false;
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
+            if (min1[i] > min2[i]) {
                 min1[i] = min2[i];
+                affected = true;
             }
-            if(max1[i] < max2[i]){
+            if (max1[i] < max2[i]) {
                 max1[i] = max2[i];
+                affected = true;
             }
         }
+
+        if (!affected) {
+            return;
+        }
+
         parent.minValues = min1;
         parent.maxValues = max1;
         parent.area = getArea(min1, max1);
@@ -213,6 +223,10 @@ class Rectangle<T> extends SpaceObject {
     //This methods adds a point to this object.
     @SuppressWarnings("unchecked")
     void AddPoint(Point entry) {
+        if (entries == null) {
+            entries = getEntries();
+            loadedFromDisk = false;
+        }
         entries[entriesSize] = (T) entry;
         entriesSize++;
         ResizeBoundingBox();
@@ -221,7 +235,7 @@ class Rectangle<T> extends SpaceObject {
     @SuppressWarnings("unchecked")
     void AddPoint(Rectangle<?> entry) {
         entry.parentId = this.id;
-        if(entries == null){
+        if (entries == null) {
             entries = getEntries();
             loadedFromDisk = false;
         }
@@ -248,9 +262,9 @@ class Rectangle<T> extends SpaceObject {
 
     void setId(long id) {
         this.id = id;
-        if(!pointsToLeafs()){
-            Rectangle<?>[] children = (Rectangle<?>[])this.getEntries();
-            for(Rectangle<?> child : children){
+        if (!pointsToLeafs()) {
+            Rectangle<?>[] children = (Rectangle<?>[]) this.getEntries();
+            for (Rectangle<?> child : children) {
                 child.parentId = this.id;
                 child.SaveRectangle();
             }
@@ -263,7 +277,6 @@ class Rectangle<T> extends SpaceObject {
         if (!loadedFromDisk) return Arrays.copyOfRange(entries, 0, entriesSize);
 
 
-        T[] result;
         if (isLeafContainer) {
             return Arrays.copyOfRange(entries, 0, entriesSize);
         } else {
@@ -272,12 +285,9 @@ class Rectangle<T> extends SpaceObject {
                 rectangles[i] = FileReader.getRectangle(entriesId[i]);
             }
 
-            result = (T[])rectangles;
-            //entries = (T[]) rectangles;
-            //loadedFromDisk = false;
+            entries = (T[]) rectangles;
         }
-        return result;
-        //return entries;
+        return entries;
     }
 
     @SuppressWarnings("unchecked")
@@ -365,7 +375,8 @@ class Rectangle<T> extends SpaceObject {
         for (int i = 0; i < Main.DIMENSIONS; i++) {
             if (newMinValues[i] > rectangle.getMinValue(i)) {
                 newMinValues[i] = rectangle.getMinValue(i);
-            } else if (newMaxValues[i] < rectangle.getMaxValue(i)) {
+            }
+            if (newMaxValues[i] < rectangle.getMaxValue(i)) {
                 newMaxValues[i] = rectangle.getMaxValue(i);
             }
         }
@@ -381,44 +392,44 @@ class Rectangle<T> extends SpaceObject {
         return true;
     }
 
-    double MinimumDistance(Point point){
+    double MinimumDistance(Point point) {
         double result = 0;
-        for(int i=0; i<Main.DIMENSIONS; i++){
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
             double r;
             double p = point.getPosition(i);
-            if(p < minValues[i]){
+            if (p < minValues[i]) {
                 r = minValues[i];
-            }else {
+            } else {
                 r = Math.min(p, maxValues[i]);
             }
             result += Math.pow(p - r, 2);
         }
-        return result;
+        return Math.sqrt(result);
     }
 
-    double MinMaxDistance(Point point){
+    double MinMaxDistance(Point point) {
         double result = Double.MAX_VALUE;
-        for(int i=0; i<Main.DIMENSIONS; i++){
+        for (int i = 0; i < Main.DIMENSIONS; i++) {
             double dist = point.getPosition(i);
-            if(dist <= (minValues[i] + maxValues[i]) / 2){
+            if (dist <= (minValues[i] + maxValues[i]) / 2) {
                 dist -= minValues[i];
             } else {
                 dist -= maxValues[i];
             }
             dist = Math.pow(dist, 2);
             double sum = 0;
-            for(int j=0; j<Main.DIMENSIONS; j++){
-                if(i != j){
+            for (int j = 0; j < Main.DIMENSIONS; j++) {
+                if (i != j) {
                     double p = point.getPosition(j);
-                    if(p >= (minValues[j] + maxValues[j]) / 2){
+                    if (p >= (minValues[j] + maxValues[j]) / 2) {
                         sum += Math.pow(p - minValues[i], 2);
-                    }else{
+                    } else {
                         sum += Math.pow(p - maxValues[i], 2);
                     }
                 }
             }
             dist += sum;
-            if(dist < result){
+            if (dist < result) {
                 result = dist;
             }
         }
@@ -427,9 +438,11 @@ class Rectangle<T> extends SpaceObject {
 
     //Given another rectangle, calculate the overlap value with this one.
     double OverlapCost(Rectangle<?> rectangle) {
-        double[] otherMinValues = rectangle.getMinValues();
-        double[] otherMaxValues = rectangle.getMaxValues();
-        if(Arrays.equals(otherMinValues, minValues) && Arrays.equals(otherMaxValues, maxValues)){
+        return OverlapCost(rectangle.getMinValues(), rectangle.getMaxValues());
+    }
+
+    double OverlapCost(double[] otherMinValues, double[] otherMaxValues) {
+        if (Arrays.equals(otherMinValues, minValues) && Arrays.equals(otherMaxValues, maxValues)) {
             return area;
         }
         double overlap = 1;

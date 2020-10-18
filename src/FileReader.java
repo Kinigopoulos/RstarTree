@@ -1,7 +1,6 @@
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -153,16 +152,26 @@ class FileReader {
     }
 
     public static void CreateIndexFile(Rectangle<?> rectangle) {
-        float startTime = System.nanoTime();
         WriteFile("indexFile" + rectangle.getId(), rectangle.getData());
-        float endTime = System.nanoTime();
-        //System.out.println("Wrote a file in: " + (endTime - startTime));
     }
 
 
+
+    static boolean isContained(Rectangle<?> P, Rectangle<?> N){
+        for(int i = 0; i < Main.DIMENSIONS; i++){
+            if(P.getMinValue(i) > N.getMinValue(i)){
+                return false;
+            }else if(P.getMaxValue(i) < N.getMaxValue(i)){
+                return false;
+            }
+        }
+        return true;
+    }
     public static void CheckRStar(){
         ArrayList<Rectangle<?>> rectangles = new ArrayList<>();
         rectangles.add(getRectangle(0));
+
+        double minX = Double.MAX_VALUE, maxX = 0, minY = Double.MAX_VALUE, maxY = 0;
 
         boolean[] ids = new boolean[(int)RStar.nodes];
         ids[0] = true;
@@ -172,11 +181,29 @@ class FileReader {
             Rectangle<?> N = rectangles.get(0);
             rectangles.remove(0);
             if(N.pointsToLeafs()){
+                Point[] points = (Point[]) N.getEntries();
+                for(Point point : points){
+
+                    minX = Math.min(minX, point.getMinValue(0));
+                    minY = Math.min(minY, point.getMinValue(1));
+
+                    maxX = Math.max(maxX, point.getMinValue(0));
+                    maxY = Math.max(maxY, point.getMinValue(1));
+
+                    Rectangle<?> n = new Rectangle<Point>(new Point[]{point}, 0);
+                    if(!isContained(N, n)){
+                        System.out.println(point.getId() + " (point) is not contained under " + N.getId());
+                    }
+                }
                 continue;
             }
             Rectangle<?>[] children = (Rectangle<?>[]) N.getEntries();
 
             for(int i = 0; i < N.getEntriesSize(); i++){
+                if(!isContained(N, children[i])){
+                    System.out.println(children[i].getId() + " is not contained under " + N.getId());
+                }
+
                 int id = (int)children[i].getId();
                 if(ids[id]){
                     System.out.println("DOUBLE ID: " + id);
@@ -184,6 +211,8 @@ class FileReader {
                 ids[id] = true;
                 rectangles.add(children[i]);
             }
+
+
 
 
         }
@@ -198,43 +227,11 @@ class FileReader {
             i++;
         }
         System.out.println("Rstar's correctness is " + correct);
-    }
 
-    static HashSet<Long> ids = new HashSet<>();
-    public static void CheckForDuplicates(){
+        System.out.println("===== BOUNDS =====");
+        System.out.println(minX + " " + minY);
+        System.out.println(maxX + " " + maxY);
 
-        int id = 0;
-        ids = new HashSet<>();
-        while (id < RStar.nodes){
-            try{
-                Scanner scanner = new Scanner(new File(INDEXFILE + id));
-                if(scanner.nextLine().equals("D")){
-                    //System.out.println("ID TO READ " + id);
-                    Rectangle<?> rectangle = getRectangle(id);
-                    Point[] points = (Point[]) rectangle.getEntries();
-
-                    scanner.nextLine(); scanner.nextLine(); scanner.nextLine();
-                    scanner.nextLine(); scanner.nextLine();
-
-                    for(int i=0; i<rectangle.getEntriesSize(); i++){
-
-                        if(ids.contains(points[i].getId())){
-                            long ahaId = points[i].getId();
-                            System.out.println(points[i].getId());
-
-                        }else{
-                            ids.add(points[i].getId());
-                        }
-
-                    }
-
-                }
-                id++;
-            }catch (FileNotFoundException ignored){
-                System.out.println("File not found");
-                break;
-            }
-        }
     }
 
     public static void EditAreaOfIndex(long id, double area, double[] min, double[] max) {
@@ -262,8 +259,6 @@ class FileReader {
     }
 
     public static Rectangle<?> getRectangle(long id){
-        float startTime = System.nanoTime();
-
         Rectangle<?> result = null;
         try {
             Scanner scanner = new Scanner(new File(INDEXFILE + id));
@@ -284,12 +279,20 @@ class FileReader {
             }
             long[] children = new long[Main.MAX_ENTRIES + 1];
             int[] pageId = new int[Main.MAX_ENTRIES];
+            double[][] positionP = new double[Main.MAX_ENTRIES][Main.DIMENSIONS];
+
             int i = 0;
             while(scanner.hasNextLine()){
                 children[i] = Long.parseLong(line);
                 line = scanner.nextLine();
                 if(pointsToLeafs){
                     pageId[i] = Integer.parseInt(line);
+
+                    for(int j = 0; j < Main.DIMENSIONS; j++){
+                        line = scanner.nextLine();
+                        positionP[i][j] = Double.parseDouble(line);
+                    }
+
                     if(scanner.hasNextLine()){
                         line = scanner.nextLine();
                     }
@@ -299,7 +302,8 @@ class FileReader {
             if(pointsToLeafs) {
                 Point[] points = new Point[Main.MAX_ENTRIES + 1];
                 for (int j = 0; j < i; j++){
-                    points[j] = GetPoint(children[j], pageId[j]);
+                    //points[j] = GetPoint(children[j], pageId[j]);
+                    points[j] = new Point(children[j], positionP[j], pageId[j]);
                 }
                 result = new Rectangle<>(points, i, id, parent, true, min, max, area);
             }
@@ -315,13 +319,6 @@ class FileReader {
             System.out.println("Failed to read IndexFile" + id);
             e.printStackTrace();
         }
-
-        StackTraceElement[] stacktrace = Thread.currentThread().getStackTrace();
-        StackTraceElement e = stacktrace[2];//maybe this number needs to be corrected
-        String methodName = e.getMethodName();
-
-        float endTime = System.nanoTime();
-        //System.out.println("Read a file in: " + (endTime - startTime) + "\nID: " + id + "\tMethod used: " + methodName);
 
         return result;
     }

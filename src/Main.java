@@ -7,7 +7,7 @@ public class Main {
     ///// STATIC VARIABLES \\\\\
     //=== R* TREE VARIABLES ===
     // Defines that no more than the given number of rectangles or points can be contained in each node.
-    public static final int MAX_ENTRIES = 4;
+    public static final int MAX_ENTRIES = 10;
     // Defines the percentage of minimum entries. Ideal value: 40% according to the paper.
     public static final int MINIMUM_ENTRIES_PERCENTAGE = 40;
     // Dimensions of the database and/or RStar Tree.
@@ -15,11 +15,11 @@ public class Main {
 
     //=== WRITING DATAFILE VARIABLES ===
     // Defines the csv file which will saved in datafiles
-    public static final String FILENAME = "amenity_points2.csv";
+    public static final String FILENAME = "amenity_points.csv";
     // Defines if the program should ignore the first line because is a header and doesn't contain information.
     public static final boolean HAS_HEADER = true;
     // Defines maximum size (in bytes) for each datafile
-    public static final int MAXIMUM_SIZE = 700;
+    public static final int MAXIMUM_SIZE = 32000;
     // Defines the character that splits data into columns
     public static final String SEPARATOR = ",";
     // Defines the columns of data that indicate position. Ex.: {0, 1} indicates that x is in 0th column, y is in 1st.
@@ -62,6 +62,7 @@ public class Main {
             System.out.println("2. R* K-nn Query");
             System.out.println("3. Serial Search Range Query");
             System.out.println("4. Serial Search K-nn Query");
+            System.out.println("5. Insert Data to R*");
 
             choice = scanner.nextLine();
             long startTime = -1;
@@ -99,7 +100,17 @@ public class Main {
                 SerialSearch.K_NN_QUERY(k, position);
                 endTime = System.nanoTime();
             }
-            if(startTime != -1) System.out.println("\nExecuted in " + (endTime - startTime) + " seconds");
+            else if(choice.equals("5")){
+                System.out.println("Point's Position");
+                double[] position = readPoint();
+                System.out.println("The id of the point");
+                int id = Integer.parseInt(scanner.nextLine());
+                startTime = System.nanoTime();
+                Point point = new Point(id, position);
+                rStar.InsertData(point);
+                endTime = System.nanoTime();
+            }
+            if(startTime != -1) System.out.println("\nExecuted in " + (double)((endTime - startTime) / 1_000_000) + " milliseconds");
             System.out.println("===================\n");
         }
 
