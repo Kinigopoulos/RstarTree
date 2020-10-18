@@ -7,7 +7,7 @@ class RStar {
     private Rectangle<?> Root;
     private HashSet<Integer> reinsertLevels;
     private int leafLevel;
-    private int nodes; //Used to track the amount of R containers
+    public static long nodes; //Used to track the amount of R containers
     private KnnPoint[] nearestKNN; //Used only in k-nn queries
 
     RStar() {
@@ -29,6 +29,7 @@ class RStar {
             int childrenSize = rectanglesToLook.get(0).getEntriesSize();
             if (children[0].pointsToLeafs()) {
                 for (int i = 0; i < childrenSize; i++) {
+
                     Point[] points = (Point[]) children[i].getEntries();
                     for (Point point : points) {
                         if (Rectangle.ContainsPoint(point, minValues, maxValues)) {
@@ -40,8 +41,6 @@ class RStar {
                 for (int i = 0; i < childrenSize; i++) {
                     if (children[i].OverlapCost(query) > 0) {
                         rectanglesToLook.add(children[i]);
-                    } else {
-                        children[i].printData();
                     }
                 }
             }
@@ -62,27 +61,23 @@ class RStar {
     static class ActiveBranchList {
         Rectangle<?> rectangle;
         double MinDist;
-        double MinMaxDist;
-        double DistanceFromCenter;
+        //double MinMaxDist;
+        //double DistanceFromCenter;
 
         ActiveBranchList(Rectangle<?> rectangle, Point query) {
             this.rectangle = rectangle;
             MinDist = rectangle.MinimumDistance(query);
-            MinMaxDist = rectangle.MinMaxDistance(query);
-            DistanceFromCenter = DistanceOf(rectangle.getCenterPoint(), query.getPositions());
+            //MinMaxDist = rectangle.MinMaxDistance(query);
+            //DistanceFromCenter = DistanceOf(rectangle.getCenterPoint(), query.getPositions());
         }
 
         static int compareTo(ActiveBranchList a, ActiveBranchList b) {
             if (a.MinDist < b.MinDist) {
-                return 1;
-            } else if (a.MinDist > b.MinDist) {
                 return -1;
+            } else if (a.MinDist > b.MinDist) {
+                return 1;
             }
             return 0;
-        }
-
-        static boolean DiscardByPruning1(ActiveBranchList a, ActiveBranchList b) {
-            return a.MinMaxDist < b.MinDist;
         }
     }
 
@@ -101,7 +96,6 @@ class RStar {
     }
 
     private void FindNeighbours(int k, Rectangle<?> rectangle, Point query) {
-        rectangle.printData();
         if (rectangle.pointsToLeafs()) {
             Point[] points = (Point[]) rectangle.getEntries();
             for (Point point : points) {
@@ -123,48 +117,29 @@ class RStar {
             }
             Arrays.sort(ABL, ActiveBranchList::compareTo);
 
-            for(int i = 0; i < size; i++){
-
-                if(nearestKNN[k-1] != null){
-                    if(ABL[i].MinDist >= nearestKNN[k-1].distance){
-                        break;
-                    }
+            for (int i = 0; i < size; i++) {
+                if (ABL[i].MinDist >= nearestKNN[k - 1].distance) {
+                    break;
                 }
                 FindNeighbours(k, ABL[i].rectangle, query);
             }
         }
     }
 
-    double Overlap(Rectangle<?> rectangle) {
-        double area = rectangle.getArea();
-        double totalOverlap = 0;
-        ArrayList<Rectangle<?>> rectanglesToLook = new ArrayList<>();
-        if (Root.pointsToLeafs()) {
-            return 0;
-        }
-        rectanglesToLook.add(Root); //Add the root to begin looking for overlaps
-        while (!rectanglesToLook.isEmpty()) {
-            Rectangle<?>[] currentChildren = (Rectangle<?>[]) rectanglesToLook.get(0).getEntries();
-            for (int i = 0; i < rectanglesToLook.get(0).getEntriesSize(); i++) {
-                double overlap = rectangle.OverlapCost(currentChildren[i]);
-                //If the overlap is the same as the area it means that the rectangle either includes the
-                //rectangle which we calculate the overlap for or they are the same.
-                if (overlap == area) {
-                    if (!currentChildren[i].pointsToLeafs()) {
-                        rectanglesToLook.add(currentChildren[i]);
-                    }
-                } else {
-                    totalOverlap += overlap;
-                }
+    double Overlap(Rectangle<?> rectangle, Rectangle<?> enlargement, Rectangle<?>[] children, int size) {
+        double overlap = 0;
+        for (int i = 0; i < size; i++) {
+            if (children[i] == rectangle) {
+                continue;
             }
-            rectanglesToLook.remove(0);
+            overlap += children[i].OverlapCost(enlargement) - children[i].OverlapCost(rectangle);
         }
-        return totalOverlap;
+        return overlap;
     }
 
     Rectangle<?> ChooseSubtree(Rectangle<?> entry, int level) {
         Rectangle<?> N = Root; //N is equal to the root.
-        while (level > 0) {
+        while (level < leafLevel) {
             Rectangle<?>[] children = (Rectangle<?>[]) N.getEntries();
             int bestRectangle = 0; //Starting by assuming that the best rectangle is the first.
             double bestArea = children[0].AreaEnlargement(entry);
@@ -172,15 +147,20 @@ class RStar {
                 Point point = (Point) entry.getEntries()[0];
                 double minOverlap = Double.MAX_VALUE;
                 for (int i = 0; i < N.getEntriesSize(); i++) {
+                    double overlap;
                     Rectangle<Point> copy = new Rectangle<>((Point[]) children[i].getEntries(), 0);
                     copy.AddPoint(point);
-                    double copyOverlap = Overlap(copy);
+                    if (Rectangle.ContainsPoint(point, children[i].getMinValues(), children[i].getMaxValues())) {
+                        overlap = 0;
+                    } else {
+                        overlap = Overlap(children[i], copy, children, N.getEntriesSize());
+                    }
 
-                    if (copyOverlap < minOverlap) {
+                    if (overlap < minOverlap) {
                         bestRectangle = i;
                         bestArea = copy.getArea();
-                        minOverlap = copyOverlap;
-                    } else if (copyOverlap == minOverlap) {
+                        minOverlap = overlap;
+                    } else if (overlap == minOverlap) {
                         double area = copy.getArea();
                         if (bestArea > area) {
                             bestRectangle = i;
@@ -194,68 +174,60 @@ class RStar {
                 }
             } else {
                 for (int i = 1; i < N.getEntriesSize(); i++) {
-                    if (bestArea > children[i].AreaEnlargement(entry)) {
+                    double area = children[i].AreaEnlargement(entry);
+                    if (bestArea > area) {
                         bestRectangle = i;
-                    } else if (bestArea == children[i].AreaEnlargement(entry)) {
+                        bestArea = area;
+                    } else if (bestArea == area) {
                         if (children[bestRectangle].getArea() > children[i].getArea()) {
                             bestRectangle = i;
                         }
                     }
                 }
             }
+
             N = children[bestRectangle];
-            level--;
+            level++;
         }
         return N;
     }
 
     private Rectangle<?> Split(Rectangle<?> rectangle) {
-        int axis = ChooseSplitAxis(rectangle);
-        int index = ChooseSplitIndex(rectangle, axis);
         SpaceObject[] children = (SpaceObject[]) rectangle.getEntries();
-        Rectangle<?> other = Rectangle.CreateRectangle(Arrays.copyOfRange(children, index, rectangle.getEntriesSize()), nodes);
-        nodes++;
+        int childrenSize = rectangle.getEntriesSize();
 
+        int axis = ChooseSplitAxis(children, childrenSize);
+        int index = ChooseSplitIndex(rectangle, axis, children, childrenSize);
+
+        Rectangle<?> other = Rectangle.CreateRectangle(Arrays.copyOfRange(children, index, childrenSize), nodes);
+        nodes++;
         rectangle.setEntriesSize(index);
         rectangle.SaveRectangle();
         return other;
     }
 
-    private int ChooseSplitAxis(Rectangle<?> rectangle) {
-        final int M = rectangle.getEntriesSize();
+    private int ChooseSplitAxis(SpaceObject[] children, int M) {
         final int m = Main.MINIMUM_ENTRIES_PERCENTAGE * M / 100;
         final int kMax = M - 2 * m + 1;
         int kEnd = m + kMax;
 
-        SpaceObject[] children;
-        if (rectangle.pointsToLeafs()) {
-            children = new Point[M];
-        } else {
-            children = new Rectangle[M];
-        }
-        System.arraycopy((SpaceObject[]) rectangle.getEntries(), 0, children, 0, M);
-
         double bestMargin = Double.MAX_VALUE;
         int bestAxis = 0;
+
         for (int axis = 0; axis < Main.DIMENSIONS; axis++) {
             double totalMargin = 0;
             for (int sortType = 0; sortType < 2; sortType++) {
+                int finalAxis = axis;
                 if (sortType == 0) {
-                    int finalAxis = axis;
-                    Arrays.sort(children, (a, b) -> SpaceObject.Compare(a, b, finalAxis));
+                    Arrays.sort(children, (a, b) -> SpaceObject.SortByMin(a, b, finalAxis));
                 } else {
-                    SpaceObject[] reverse = children.clone();
-                    for (int i = 0; i < M; i++) {
-                        reverse[i] = children[M - i - 1];
-                    }
-                    children = reverse;
+                    Arrays.sort(children, (a, b) -> SpaceObject.SortByMax(a, b, finalAxis));
                 }
                 for (int k = m + 1; k < kEnd; k++) {
                     totalMargin += CalculateMargin(Arrays.copyOfRange(children, 0, k));
-                    totalMargin += CalculateMargin(Arrays.copyOfRange(children, k, M));
+                    totalMargin += CalculateMargin(Arrays.copyOfRange(children, k + 1, M));
                 }
             }
-
             if (totalMargin < bestMargin) {
                 bestMargin = totalMargin;
                 bestAxis = axis;
@@ -275,34 +247,40 @@ class RStar {
         return Rectangle.getMargin(temp.getMinValues(), temp.getMaxValues());
     }
 
-    private int ChooseSplitIndex(Rectangle<?> rectangle, int axis) {
+    private int ChooseSplitIndex(Rectangle<?> rectangle, int axis, SpaceObject[] children, int M) {
         double minOverlap = Double.MAX_VALUE;
         double minArea = Double.MAX_VALUE;
         int bestIndex = 0;
-        final int M = rectangle.getEntriesSize();
         final int m = Main.MINIMUM_ENTRIES_PERCENTAGE * M / 100;
         final int kMax = (M - 2 * m + 1);
 
-        SpaceObject[] children;
-        if (rectangle.pointsToLeafs()) {
-            children = new Point[M];
-        } else {
-            children = new Rectangle[M];
-        }
-        System.arraycopy((SpaceObject[]) rectangle.getEntries(), 0, children, 0, M);
-
-        Arrays.sort(children, (a, b) -> SpaceObject.Compare(a, b, axis));
-
+        Arrays.sort(children, (a, b) -> SpaceObject.SortByMin(a, b, axis));
         rectangle.setEntries(children);
 
+        Rectangle<?> parent = rectangle.getParent();
+        Rectangle<?>[] siblings = null;
+        int siblingsSize = 0;
+        if (parent != null) {
+            siblings = (Rectangle<?>[]) parent.getEntries();
+            siblingsSize = parent.getEntriesSize();
+        }
+
         for (int i = m + 1; i < m + kMax; i++) {
-            double currentOverlap = 0;
+            double currentOverlap;
 
-            Rectangle<?> split1 = Rectangle.CreateRectangle((Arrays.copyOfRange(children, 0, i)), (int) rectangle.getId());
-            Rectangle<?> split2 = Rectangle.CreateRectangle(Arrays.copyOfRange(children, i, children.length), -2);
+            Rectangle<?> split1 = Rectangle.CreateRectangle((Arrays.copyOfRange(children, 0, i)), -3);
+            Rectangle<?> split2 = Rectangle.CreateRectangle(Arrays.copyOfRange(children, i + 1, M), -4);
 
-            currentOverlap += Overlap(split1);
-            currentOverlap += Overlap(split2);
+            currentOverlap = split1.OverlapCost(split2);
+            if (parent != null) {
+                for (int j = 0; j < siblingsSize; j++) {
+                    if (siblings[j].getId() == rectangle.getId()) {
+                        continue;
+                    }
+                    currentOverlap += split1.OverlapCost(siblings[j]);
+                    currentOverlap += split2.OverlapCost(siblings[j]);
+                }
+            }
 
             if (currentOverlap < minOverlap) {
                 minOverlap = currentOverlap;
@@ -317,6 +295,7 @@ class RStar {
                 }
             }
         }
+
         return bestIndex;
     }
 
@@ -324,11 +303,15 @@ class RStar {
         System.out.println("============= INSERTING " + point.getId() + " =============");
         System.out.println("===========================================================");
         if (Root != null) {
-            Insert(point, leafLevel);
+            Insert(point, 0);
             reinsertLevels = new HashSet<>();
         } else {
             Root = new Rectangle<>(new Point[]{point}, 0);
+            Root.SaveRectangle();
         }
+
+        //Root.printData();
+        Root = FileReader.getRectangle(0);
     }
 
     private void Insert(Object Entry, int level) {
@@ -341,18 +324,25 @@ class RStar {
         }
         Rectangle<?> N = ChooseSubtree(RectEntry, level);
 
-        if (Entry instanceof Point) {
+        if (isPoint) {
             N.AddPoint((Point) Entry);
         } else {
             N.AddPoint((Rectangle<?>) Entry);
+            ((Rectangle<?>)Entry).SaveRectangle();
         }
+
+        //Overflow check
+
         Rectangle<?> M = N;
         int levelCounter = 0;
         while (M.isFull()) {
             System.out.println("Overflow happened on " + M.getId());
 
-            Rectangle<?> result = OverflowTreatment(M, level - levelCounter);
+            Rectangle<?> result = OverflowTreatment(M, levelCounter + level);
+            levelCounter++;
             if (result == null) {
+                //return;
+                N = FileReader.getRectangle(N.getId());
                 break;
             }
 
@@ -363,15 +353,18 @@ class RStar {
                 result.setId(result.getId());
                 result.SaveRectangle();
                 parent.SaveRectangle();
-
             } else {
-                ChangeRoot(result);
+                ChangeRoot(result, M);
                 break;
             }
             M = parent;
-            levelCounter++;
         }
 
+
+        //Saving and/or fixing bounding boxes
+        if (levelCounter == 0) {
+            N.SaveRectangle();
+        }
         M = N.getParent();
         while (M != null) {
 
@@ -382,15 +375,17 @@ class RStar {
         }
     }
 
-    private void ChangeRoot(Rectangle<?> result) {
-        Rectangle<?> previousRoot = Root;
+    private void ChangeRoot(Rectangle<?> result, Rectangle<?> previousRoot) {
+        System.out.println("***CHANGING ROOT***");
         previousRoot.setId(nodes);
         nodes++;
         Root = new Rectangle<>(new Rectangle<?>[]{previousRoot, result}, 0); //New Root
 
         Root.SaveRectangle();
+
         result.setId(result.getId());
         result.SaveRectangle();
+        previousRoot.setId(previousRoot.getId());
         previousRoot.SaveRectangle();
 
         leafLevel++;
@@ -398,7 +393,6 @@ class RStar {
 
     private Rectangle<?> OverflowTreatment(Rectangle<?> N, int level) {
         if (!reinsertLevels.contains(level) && N.getId() > 0) {
-
             reinsertLevels.add(level);
             Reinsert(N, level);
             return null;
@@ -416,9 +410,9 @@ class RStar {
         }
 
         static int compareTo(ReinsertStruct a, ReinsertStruct b) {
-            if (a.distance < b.distance) {
+            if (a.distance > b.distance) {
                 return -1;
-            } else if (a.distance > b.distance) {
+            } else if (a.distance < b.distance) {
                 return 1;
             }
             return 0;
@@ -445,6 +439,7 @@ class RStar {
         N.SaveRectangle();
 
         for (int i = length - p; i < length; i++) {
+            System.out.println("Re-Inserting " + struct[i].child.getId());
             Insert(struct[i].child, level);
         }
     }
@@ -456,20 +451,5 @@ class RStar {
         }
         return Math.sqrt(result);
     }
-
-    void printAll() {
-        print(Root);
-    }
-
-    private void print(Rectangle<?> rectangle) {
-        rectangle.printData();
-        if (!rectangle.pointsToLeafs()) {
-            Rectangle<?>[] children = (Rectangle<?>[]) rectangle.getEntries();
-            for (int i = 0; i < rectangle.getEntriesSize(); i++) {
-                print(children[i]);
-            }
-        }
-    }
-
 }
 
